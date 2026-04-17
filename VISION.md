@@ -9,7 +9,7 @@
 
 | Tier | Artifact | Purpose |
 |------|----------|---------|
-| Constitution | `AGENTS.md` | How bureau's personas behave |
+| Constitution | `.specify/memory/constitution.md` | How bureau's personas behave |
 | **Vision** | `VISION.md` (this file) | Who bureau is — taste, voice, judgment |
 | Specs | `specs/` | What to build |
 | Reference | `bureau/agents/*.md` | Persona definitions |
