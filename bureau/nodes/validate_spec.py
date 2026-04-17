@@ -10,7 +10,6 @@ from bureau.state import Escalation, EscalationReason, Phase
 
 def validate_spec_node(state: dict[str, Any]) -> dict[str, Any]:
     with events.phase(Phase.VALIDATE_SPEC):
-        run_id = state["run_id"]
         spec_path = state["spec_path"]
 
         try:

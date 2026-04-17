@@ -121,7 +121,9 @@ def _parse_functional_requirements(lines: list[str]) -> list[FunctionalRequireme
             # not an actual unresolved marker.
             text_outside_code = _CODE_SPAN_PATTERN.sub("", text)
             needs_clarification = bool(_NEEDS_CLARIFICATION_PATTERN.search(text_outside_code))
-            reqs.append(FunctionalRequirement(id=fr_id, text=text, needs_clarification=needs_clarification))
+            reqs.append(
+                FunctionalRequirement(id=fr_id, text=text, needs_clarification=needs_clarification)
+            )
     return reqs
 
 

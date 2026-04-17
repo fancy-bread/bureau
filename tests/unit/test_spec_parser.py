@@ -4,7 +4,6 @@ import pytest
 
 from bureau.spec_parser import SpecParseError, parse_spec
 
-
 _VALID_SPEC = """\
 # Test Feature
 
@@ -119,6 +118,8 @@ def test_missing_required_section_raises(tmp_path):
 
 def test_missing_h1_raises(tmp_path):
     spec_file = tmp_path / "spec.md"
-    spec_file.write_text("No H1 here\n## User Scenarios & Testing\n## Requirements\n## Success Criteria\n")
+    spec_file.write_text(
+        "No H1 here\n## User Scenarios & Testing\n## Requirements\n## Success Criteria\n"
+    )
     with pytest.raises(SpecParseError, match="No H1 title"):
         parse_spec(str(spec_file))
