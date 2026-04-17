@@ -1,0 +1,115 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import StrEnum
+from typing import Annotated, Any, Optional
+
+from langgraph.graph.message import add_messages
+
+
+class Phase(StrEnum):
+    VALIDATE_SPEC = "validate_spec"
+    REPO_ANALYSIS = "repo_analysis"
+    MEMORY = "memory"
+    PLANNER = "planner"
+    BUILDER = "builder"
+    CRITIC = "critic"
+    PR_CREATE = "pr_create"
+    ESCALATE = "escalate"
+    COMPLETE = "complete"
+    FAILED = "failed"
+
+
+class RunStatus(StrEnum):
+    RUNNING = "running"
+    PAUSED = "paused"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    ABORTED = "aborted"
+
+
+class EscalationReason(StrEnum):
+    SPEC_INVALID = "SPEC_INVALID"
+    CONFIG_MISSING = "CONFIG_MISSING"
+    BLOCKER = "BLOCKER"
+    CONSTITUTION_CRITICAL = "CONSTITUTION_CRITICAL"
+    MAX_RETRIES = "MAX_RETRIES"
+
+
+@dataclass
+class UserStory:
+    title: str
+    priority: str
+    description: str
+    acceptance_scenarios: list[str] = field(default_factory=list)
+
+
+@dataclass
+class FunctionalRequirement:
+    id: str
+    text: str
+    needs_clarification: bool = False
+
+
+@dataclass
+class Spec:
+    name: str
+    branch: str
+    status: str
+    user_stories: list[UserStory] = field(default_factory=list)
+    functional_requirements: list[FunctionalRequirement] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    edge_cases: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+
+
+@dataclass
+class RepoContext:
+    language: str
+    base_image: str
+    install_cmd: str
+    test_cmd: str
+    build_cmd: str = ""
+    lint_cmd: str = ""
+    constitution_path: Optional[str] = None
+
+
+@dataclass
+class Escalation:
+    run_id: str
+    phase: Phase
+    reason: EscalationReason
+    what_happened: str
+    what_is_needed: str
+    options: list[str]
+    timestamp: str
+
+
+@dataclass
+class RunRecord:
+    run_id: str
+    spec_path: str
+    repo_path: str
+    status: RunStatus
+    current_phase: Phase
+    started_at: str
+    updated_at: str
+    pr_url: Optional[str] = None
+
+
+class RunState(dict):
+    """LangGraph state for a bureau run. Extends dict for TypedDict compatibility."""
+
+
+def make_initial_state(run_id: str, spec_path: str, repo_path: str) -> dict[str, Any]:
+    return {
+        "run_id": run_id,
+        "spec_path": spec_path,
+        "repo_path": repo_path,
+        "phase": Phase.VALIDATE_SPEC,
+        "spec": None,
+        "repo_context": None,
+        "escalations": [],
+        "decisions": [],
+        "messages": [],
+    }
