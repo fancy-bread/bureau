@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bureau"
+version = "0.1.0"
+description = "Autonomous ASDLC runtime — spec file in, pull request out"
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=0.2",
+    "langgraph-checkpoint-sqlite",
+    "typer>=0.12",
+    "pydantic>=2",
+    "anthropic>=0.25",
+]
+
+[project.scripts]
+bureau = "bureau.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["bureau*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

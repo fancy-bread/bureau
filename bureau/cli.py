@@ -1,0 +1,167 @@
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+from typing import Optional
+
+import typer
+
+from bureau import events
+from bureau.config import load_bureau_config
+from bureau.graph import build_graph
+from bureau.run_manager import (
+    RunNotFoundError,
+    RunNotPausedError,
+    abort_run,
+    create_run,
+    get_run,
+    init_repo,
+    list_runs,
+    resume_run,
+    write_run_record,
+)
+from bureau.state import Phase, RunStatus, make_initial_state
+
+app = typer.Typer(name="bureau", help="Autonomous ASDLC runtime — spec file in, pull request out.")
+
+
+@app.command()
+def run(
+    spec_file: str = typer.Argument(..., help="Path to spec.md"),
+    repo: str = typer.Option(".", help="Path to target repository"),
+    config: Optional[str] = typer.Option(None, help="Path to bureau.toml"),
+) -> None:
+    """Execute the ASDLC workflow from a spec file."""
+    spec_path = str(Path(spec_file).resolve())
+    repo_path = str(Path(repo).resolve())
+
+    if not Path(spec_path).exists():
+        typer.echo(f"Error: spec file not found: {spec_path}", err=True)
+        raise typer.Exit(1)
+
+    bureau_config = load_bureau_config(config)
+    record = create_run(spec_path, repo_path)
+    run_id = record.run_id
+
+    events.emit(events.RUN_STARTED, id=run_id, spec=spec_file, repo=repo)
+
+    compiled = build_graph(run_id, bureau_config)
+    initial_state = make_initial_state(run_id, spec_path, repo_path)
+    thread_config = {"configurable": {"thread_id": run_id}}
+
+    import time
+    start = time.monotonic()
+    try:
+        for _ in compiled.stream(initial_state, config=thread_config):
+            pass
+    except Exception as exc:
+        record = get_run(run_id)
+        record.status = RunStatus.FAILED
+        record.current_phase = Phase.FAILED
+        write_run_record(record)
+        events.emit(events.RUN_FAILED, id=run_id, phase=record.current_phase, error=str(exc))
+        raise typer.Exit(2)
+
+    duration = time.monotonic() - start
+    record = get_run(run_id)
+
+    if record.status == RunStatus.PAUSED:
+        return
+
+    record.status = RunStatus.COMPLETE
+    record.current_phase = Phase.COMPLETE
+    write_run_record(record)
+    events.emit(events.RUN_COMPLETED, id=run_id, duration=f"{duration:.1f}s")
+
+
+@app.command()
+def resume(
+    run_id: str = typer.Argument(..., help="Run ID to resume"),
+    response: str = typer.Option("", help="Response to escalation question"),
+) -> None:
+    """Resume a paused run from its last checkpoint."""
+    try:
+        record = resume_run(run_id, response)
+    except RunNotFoundError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(1)
+    except RunNotPausedError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(1)
+
+    bureau_config = load_bureau_config(None)
+    compiled = build_graph(run_id, bureau_config)
+    thread_config = {"configurable": {"thread_id": run_id}}
+
+    import time
+    start = time.monotonic()
+    events.emit(events.RUN_STARTED, id=run_id, spec=record.spec_path, repo=record.repo_path)
+
+    try:
+        for _ in compiled.stream(None, config=thread_config):
+            pass
+    except Exception as exc:
+        record = get_run(run_id)
+        record.status = RunStatus.FAILED
+        write_run_record(record)
+        events.emit(events.RUN_FAILED, id=run_id, phase=record.current_phase, error=str(exc))
+        raise typer.Exit(2)
+
+    duration = time.monotonic() - start
+    record = get_run(run_id)
+    if record.status != RunStatus.PAUSED:
+        record.status = RunStatus.COMPLETE
+        record.current_phase = Phase.COMPLETE
+        write_run_record(record)
+        events.emit(events.RUN_COMPLETED, id=run_id, duration=f"{duration:.1f}s")
+
+
+@app.command(name="list")
+def list_cmd(
+    status: Optional[str] = typer.Option(None, help="Filter by status"),
+) -> None:
+    """List all runs."""
+    runs = list_runs(status)
+    if not runs:
+        typer.echo("No runs found.")
+        return
+    for r in runs:
+        typer.echo(f"{r.run_id}\t{r.status}\t{r.started_at}\t{r.spec_path}")
+
+
+@app.command()
+def show(run_id: str = typer.Argument(..., help="Run ID to show")) -> None:
+    """Show details of a run."""
+    try:
+        record = get_run(run_id)
+    except RunNotFoundError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(1)
+    for key, value in record.__dict__.items():
+        typer.echo(f"{key}: {value}")
+
+
+@app.command()
+def abort(run_id: str = typer.Argument(..., help="Run ID to abort")) -> None:
+    """Abort a run."""
+    try:
+        abort_run(run_id)
+        typer.echo(f"Run {run_id} aborted.")
+    except RunNotFoundError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(name="init")
+def init_cmd(
+    repo: str = typer.Option(".", help="Target repository path"),
+) -> None:
+    """Scaffold .bureau/config.toml in a target repository."""
+    result = init_repo(repo)
+    config_path = Path(repo) / ".bureau" / "config.toml"
+    if result == "exists":
+        typer.echo(f"Warning: {config_path} already exists. Not overwriting.")
+    else:
+        typer.echo(f"Created {config_path}")
+        typer.echo("Edit it to fill in FILL_IN placeholders before running bureau.")
