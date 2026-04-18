@@ -27,7 +27,7 @@ def _route_planner(state: dict[str, Any]) -> str:
 
 
 def _route_critic(state: dict[str, Any]) -> str:
-    return state.get("_route", "pass")
+    return state.get("_route", "pass")  # critic_node sets _route: pass | revise | escalate
 
 
 def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
@@ -67,7 +67,7 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     graph.add_conditional_edges(
         "critic",
         _route_critic,
-        {"pass": "pr_create", "send_back_builder": "builder", "escalate": "escalate"},
+        {"pass": "pr_create", "revise": "builder", "escalate": "escalate"},
     )
     graph.add_edge("pr_create", END)
     graph.add_edge("escalate", END)
