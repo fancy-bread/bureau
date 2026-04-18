@@ -46,6 +46,53 @@ If any phase cannot proceed, bureau emits a structured escalation and pauses. Yo
 
 ---
 
+## Prerequisites
+
+**uv** — Python package manager
+```sh
+brew install uv
+# or
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**GitHub CLI** — required for PR creation
+```sh
+brew install gh
+gh auth login
+```
+
+**Anthropic API key** — required for persona execution (Planner, Builder, Critic)
+```sh
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+Add to your shell profile to persist.
+
+**Spec Kit** — required for the spec-driven development workflow
+```sh
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+```
+Initialise in your repo:
+```sh
+cd /path/to/your/repo
+specify init . --ai claude
+```
+This scaffolds `.specify/` and wires the slash commands (`/speckit-specify`, `/speckit-plan`, etc.) for use with Claude Code.
+
+**bureau** — the CLI itself (install from source until a release package is available)
+```sh
+uv pip install git+https://github.com/fancy-bread/bureau.git
+```
+
+**Target repo setup**
+```sh
+cd /path/to/your/repo
+bureau init
+```
+
+> **Upcoming**: bureau will be released as an installable CLI via a curl script and Homebrew tap so that `brew install bureau` or `curl -LsSf https://bureau.sh/install.sh | sh` is the standard setup path.
+
+---
+
 ## Quickstart
 
 **1. Install bureau**

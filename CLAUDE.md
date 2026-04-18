@@ -75,6 +75,8 @@ is mandatory. When editing extensions.yml, `optional: false` + `condition: null`
 ## Active Technologies
 - Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic (001-autonomous-runtime-core)
 - SQLite per run via `SqliteSaver` (`~/.bureau/runs/<run-id>/checkpoint.db`); Memory store as JSON file (`~/.bureau/runs/<run-id>/memory.json`) (001-autonomous-runtime-core)
+- Python 3.14 + langgraph 0.2+, langgraph-checkpoint-sqlite, anthropic>=0.25, typer>=0.12, pydantic>=2 (all existing) (002-personas-pr-creation)
+- SQLite per-run checkpoint (existing); memory.json per-run scratchpad (existing — extended for task plan and build attempt history) (002-personas-pr-creation)
 
 ## Recent Changes
 - 001-autonomous-runtime-core: Added Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic
