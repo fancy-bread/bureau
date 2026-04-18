@@ -73,10 +73,11 @@ test_cmd    = "pytest"
 **3. Run a spec**
 
 ```sh
-bureau run specs/001-my-feature/spec.md --repo /path/to/your/repo
+cd /path/to/your/repo
+bureau run /path/to/specs/001-my-feature/spec.md
 ```
 
-Bureau validates the spec, analyses the repo, and runs the full pipeline. When done, it prints a PR URL.
+`--repo` defaults to `.`, so invoking bureau from the repo root is the normal workflow. Bureau validates the spec, analyses the repo, and runs the full pipeline. When done, it prints a PR URL.
 
 ---
 
