@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import sys
 import time
 from contextlib import contextmanager
 from typing import Any, Generator
-
 
 RUN_STARTED = "run.started"
 RUN_COMPLETED = "run.completed"

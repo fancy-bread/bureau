@@ -4,8 +4,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 
 def _bureau_exe() -> str:
     return str(Path(sys.executable).parent / "bureau")
