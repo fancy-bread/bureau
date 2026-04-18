@@ -38,7 +38,7 @@ If any phase cannot proceed, bureau emits a structured escalation and pauses. Yo
 
 ## Stack
 
-- **Python 3.12**
+- **Python 3.14**
 - **[LangGraph](https://github.com/langchain-ai/langgraph) 0.2+** — state machine orchestration with per-node checkpointing
 - **SQLite** — run state persisted at `~/.bureau/runs/<run-id>/checkpoint.db`
 - **[Typer](https://typer.tiangolo.com)** — CLI
