@@ -28,7 +28,9 @@ def escalate_node(state: dict[str, Any]) -> dict[str, Any]:
         print()
         print(f"  Resume: bureau resume {run_id} --response \"...\"")
     else:
-        events.emit(events.RUN_ESCALATED, id=run_id, phase=state.get("phase", "unknown"), reason="UNKNOWN")
+        events.emit(
+            events.RUN_ESCALATED, id=run_id, phase=state.get("phase", "unknown"), reason="UNKNOWN"
+        )
 
     try:
         record = get_run(run_id)

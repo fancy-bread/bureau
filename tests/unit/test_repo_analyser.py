@@ -4,7 +4,6 @@ import pytest
 
 from bureau.repo_analyser import ConfigInvalidError, ConfigMissingError, parse_repo_config
 
-
 _VALID_CONFIG = """\
 [runtime]
 language    = "python"
