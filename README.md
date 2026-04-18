@@ -65,7 +65,7 @@ This creates `.bureau/config.toml`. Fill in the `FILL_IN` placeholders before ru
 ```toml
 [runtime]
 language    = "python"
-base_image  = "python:3.12-slim"
+base_image  = "python:3.14-slim"
 install_cmd = "pip install -e ."
 test_cmd    = "pytest"
 ```
@@ -121,7 +121,7 @@ Every repo bureau operates on needs a `.bureau/config.toml`:
 ```toml
 [runtime]
 language    = "python"           # or typescript, go, etc.
-base_image  = "python:3.12-slim" # Docker base for the build environment
+base_image  = "python:3.14-slim" # Docker base for the build environment
 install_cmd = "pip install -e ."
 test_cmd    = "pytest"
 build_cmd   = ""                 # optional
