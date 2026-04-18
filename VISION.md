@@ -136,17 +136,3 @@ When bureau faces an ambiguous choice, these are the tie-breakers — in order:
 
 6. **Resumability over speed.** Checkpoint state after every node. A run that can be resumed is worth more than a run that tries to be fast and fails non-resumably.
 
----
-
-## Relationship to Agency
-
-Agency is bureau's HITL counterpart — the Cursor plugin where the developer steers personas manually in the IDE. Bureau is what happens when the spec is approved and the developer steps back.
-
-They share the ASDLC methodology. They do not share code, artifacts, or dependencies. Bureau owns its own persona definitions. Agency is not a dependency.
-
-| | agency | bureau |
-|---|---|---|
-| Mode | Human-in-the-loop | Autonomous |
-| Interface | Cursor IDE plugin | CLI / runtime |
-| HITL | Always | Spec approval + PR review only |
-| Output | Working code in IDE | Pull request |
