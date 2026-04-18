@@ -10,6 +10,9 @@ RUN_ESCALATED = "run.escalated"
 RUN_FAILED = "run.failed"
 PHASE_STARTED = "phase.started"
 PHASE_COMPLETED = "phase.completed"
+RALPH_STARTED = "ralph.started"
+RALPH_ATTEMPT = "ralph.attempt"
+RALPH_COMPLETED = "ralph.completed"
 
 
 def emit(event: str, **kwargs: Any) -> None:

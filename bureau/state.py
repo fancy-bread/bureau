@@ -32,6 +32,11 @@ class EscalationReason(StrEnum):
     BLOCKER = "BLOCKER"
     CONSTITUTION_CRITICAL = "CONSTITUTION_CRITICAL"
     MAX_RETRIES = "MAX_RETRIES"
+    PLAN_INCOMPLETE = "PLAN_INCOMPLETE"
+    RALPH_EXHAUSTED = "RALPH_EXHAUSTED"
+    RALPH_ROUNDS_EXCEEDED = "RALPH_ROUNDS_EXCEEDED"
+    CONSTITUTION_VIOLATION = "CONSTITUTION_VIOLATION"
+    PR_FAILED = "PR_FAILED"
 
 
 @dataclass
@@ -70,6 +75,12 @@ class RepoContext:
     build_cmd: str = ""
     lint_cmd: str = ""
     constitution_path: Optional[str] = None
+    max_builder_attempts: int = 3
+    max_ralph_rounds: int = 3
+    command_timeout: int = 300
+    planner_model: str = "claude-opus-4-7"
+    builder_model: str = "claude-sonnet-4-6"
+    critic_model: str = "claude-opus-4-7"
 
 
 @dataclass
@@ -106,8 +117,16 @@ def make_initial_state(run_id: str, spec_path: str, repo_path: str) -> dict[str,
         "repo_path": repo_path,
         "phase": Phase.VALIDATE_SPEC,
         "spec": None,
+        "spec_text": "",
         "repo_context": None,
         "escalations": [],
         "decisions": [],
         "messages": [],
+        "task_plan": None,
+        "ralph_round": 0,
+        "builder_attempts": 0,
+        "build_attempts": [],
+        "ralph_rounds": [],
+        "critic_findings": [],
+        "run_summary": None,
     }

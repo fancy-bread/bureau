@@ -21,6 +21,9 @@ bureau = "bureau.cli:app"
 [tool.setuptools.packages.find]
 include = ["bureau*"]
 
+[tool.setuptools.package-data]
+bureau = ["data/*.md"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
