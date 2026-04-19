@@ -1,9 +1,9 @@
 # Feature Specification: Bureau E2E Test Suite
 
-**Feature Branch**: `003-e2e-test-suite`
+**Feature Branch**: `004-e2e-test-suite`
 **Created**: 2026-04-18
 **Status**: Draft
-**Input**: Replace the two skipped stub-era E2E tests with a real pytest suite that drives bureau against the `fancy-bread/bureau-test` target repo and asserts on structured stdout events.
+**Input**: Replace the two skipped stub-era E2E tests with a real pytest suite that drives bureau against the `fancy-bread/bureau-test` target repo and asserts on structured stdout events. Includes isolated API key loading from `~/.bureau/.env` so bureau's Anthropic credentials are separate from Claude Code's Pro subscription auth.
 
 ---
 
@@ -75,9 +75,26 @@ Each test run works against a fresh branch in bureau-test, leaving the repo in a
 
 ---
 
+### User Story 5 — API Key Isolation: Bureau Loads Its Own Credentials (Priority: P1)
+
+A developer runs bureau alongside Claude Code in the same shell. Bureau's Anthropic API calls are billed to a separate Console account, not to the developer's Pro subscription. Bureau reads its API key from `~/.bureau/.env` so the two credential contexts never collide.
+
+**Why this priority**: Without isolation, developers must export `ANTHROPIC_API_KEY` into their shell profile, which either overwrites Claude Code's auth or requires constant switching. This makes bureau unusable in a standard Claude Code development environment.
+
+**Independent Test**: Start a shell where `ANTHROPIC_API_KEY` is NOT set. Place a valid key in `~/.bureau/.env`. Run `bureau run <spec> --repo <path>`. Bureau completes without error — the key was loaded from the file, not the environment.
+
+**Acceptance Scenarios**:
+
+1. **Given** `ANTHROPIC_API_KEY` is not in the shell environment and `~/.bureau/.env` contains `ANTHROPIC_API_KEY=sk-ant-...`, **When** any bureau command that calls the Anthropic API is run, **Then** the call succeeds using the key from the file
+2. **Given** both `~/.bureau/.env` and the shell environment contain different values for `ANTHROPIC_API_KEY`, **When** bureau runs, **Then** the shell environment value takes precedence (env var wins over file)
+3. **Given** neither `~/.bureau/.env` nor the shell environment contains `ANTHROPIC_API_KEY`, **When** bureau runs a persona node, **Then** bureau exits with a clear error message identifying the missing key — it does not emit an Anthropic SDK error traceback
+4. **Given** `~/.bureau/.env` does not exist, **When** bureau starts, **Then** bureau starts normally and falls back to the shell environment (missing file is not an error)
+
+---
+
 ### Edge Cases
 
-- If `ANTHROPIC_API_KEY` is not set, all E2E tests must skip (not fail) with a message indicating the missing var.
+- If `ANTHROPIC_API_KEY` is not set in either the shell or `~/.bureau/.env`, all E2E tests must skip (not fail) with a clear message identifying the missing credential.
 - If `gh` CLI is not authenticated, the `run.completed` assertion may not apply — document expected failure mode.
 - Bureau-test must be on `main` at the start of each test; the fixture must `git checkout main && git pull` before running.
 - If a previous bureau run left a branch open (from an interrupted test), the fixture must not fail — it should log a warning and proceed from a fresh state.
@@ -90,7 +107,7 @@ Each test run works against a fresh branch in bureau-test, leaving the repo in a
 
 - **FR-001**: An E2E test module MUST exist at `tests/e2e/test_bureau_e2e.py`
 - **FR-002**: The suite MUST read the bureau-test repo path from the `BUREAU_TEST_REPO` environment variable; if absent all tests MUST skip via `pytest.mark.skipif`
-- **FR-003**: The suite MUST skip all tests if `ANTHROPIC_API_KEY` is not set in the environment
+- **FR-003**: The suite MUST skip all tests if `ANTHROPIC_API_KEY` is not resolvable (neither shell environment nor `~/.bureau/.env`)
 - **FR-004**: Each test MUST reset bureau-test to `main` before running (`git checkout main`) and leave it on `main` after
 - **FR-005**: A `run_bureau(spec_path, repo_path) -> subprocess.CompletedProcess` helper MUST capture stdout and stderr with a timeout of 600 seconds
 - **FR-006**: `test_smoke_hello_world` MUST assert `run.completed` in stdout and exit code 0
@@ -100,6 +117,10 @@ Each test run works against a fresh branch in bureau-test, leaving the repo in a
 - **FR-010**: `test_escalation_missing_artifact` MUST be marked `pytest.mark.xfail(strict=False, reason="Planner may complete instead of escalating")` to allow for spec 004 ambiguity
 - **FR-011**: A `conftest.py` MUST provide a `bureau_test_repo` session-scoped fixture that validates the path and exposes it to all tests
 - **FR-012**: The suite MUST NOT depend on any mock or patch — all Anthropic API calls and `gh` CLI calls are real
+- **FR-013**: Bureau MUST load `~/.bureau/.env` at startup using `python-dotenv` (or equivalent), before any persona node instantiates an Anthropic client; shell environment variables MUST take precedence over file values
+- **FR-014**: If `~/.bureau/.env` does not exist, bureau MUST start normally with no error or warning
+- **FR-015**: If `ANTHROPIC_API_KEY` is not resolvable after loading `~/.bureau/.env`, bureau MUST exit with a human-readable error message (e.g. `"ANTHROPIC_API_KEY not set — add it to ~/.bureau/.env or export it in your shell"`) rather than propagating an Anthropic SDK exception
+- **FR-016**: `python-dotenv` MUST be added to bureau's runtime dependencies in `pyproject.toml`
 
 ### Non-Functional Requirements
 
@@ -112,7 +133,7 @@ Each test run works against a fresh branch in bureau-test, leaving the repo in a
 
 - **SC-001**: `pytest tests/e2e/ -v` exits 0 (or with only `xfail` marks) when env vars are set
 - **SC-002**: `pytest tests/e2e/ -v` exits 0 with all tests skipped when `BUREAU_TEST_REPO` is absent
-- **SC-003**: `pytest tests/e2e/ -v` exits 0 with all tests skipped when `ANTHROPIC_API_KEY` is absent
+- **SC-003**: `pytest tests/e2e/ -v` exits 0 with all tests skipped when `ANTHROPIC_API_KEY` is absent from both shell and `~/.bureau/.env`
 - **SC-004**: The smoke test captures a `run.completed` event within 600 seconds
 - **SC-005**: The escalation test captures a `run.escalated` event within 600 seconds
 
@@ -120,7 +141,7 @@ Each test run works against a fresh branch in bureau-test, leaving the repo in a
 
 - `bureau-test` is cloned locally before running the suite; the suite does not clone it
 - `gh` CLI is installed and authenticated in the environment where the suite runs
-- `ANTHROPIC_API_KEY` is exported in the environment
+- `ANTHROPIC_API_KEY` is set in either the shell environment or `~/.bureau/.env`; bureau loads the file automatically so it does not need to be in the shell profile
 - Python 3.12+ is the test execution environment (matches bureau's own runtime)
 - bureau is installed as a CLI in the active virtual environment (`pip install -e .`)
 - bureau-test's `main` branch is the baseline; the suite does not merge PRs it creates
