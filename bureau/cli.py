@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Optional
 
 import typer
+from dotenv import load_dotenv
 
 from bureau import events
 from bureau.config import load_bureau_config
@@ -21,7 +23,22 @@ from bureau.run_manager import (
 )
 from bureau.state import Phase, RunStatus, make_initial_state
 
+load_dotenv(Path.home() / ".bureau" / ".env", override=False)
+
 app = typer.Typer(name="bureau", help="Autonomous ASDLC runtime — spec file in, pull request out.")
+
+_PERSONA_COMMANDS = {"run", "resume"}
+
+
+@app.callback(invoke_without_command=True)
+def _check_api_key(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand in _PERSONA_COMMANDS and not os.environ.get("ANTHROPIC_API_KEY"):
+        typer.echo(
+            "[bureau] error: ANTHROPIC_API_KEY not set"
+            " — add it to ~/.bureau/.env or export it in your shell",
+            err=True,
+        )
+        raise typer.Exit(1)
 
 
 @app.command()

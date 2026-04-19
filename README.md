@@ -62,10 +62,25 @@ gh auth login
 ```
 
 **Anthropic API key** — required for persona execution (Planner, Builder, Critic)
+
+**Local development** — store the key in `~/.bureau/.env` to keep bureau's Anthropic billing separate from Claude Code's Pro subscription:
+
 ```sh
-export ANTHROPIC_API_KEY=sk-ant-...
+mkdir -p ~/.bureau
+cp bureau/data/env.example ~/.bureau/.env
+# edit ~/.bureau/.env and replace the placeholder with your real key
 ```
-Add to your shell profile to persist.
+
+Bureau reads `~/.bureau/.env` at startup via `python-dotenv`. Your shell environment takes precedence over the file — if `ANTHROPIC_API_KEY` is already exported in your shell, bureau uses that value.
+
+**CI** — inject the key as an environment variable from a secret; no `.env` file is needed:
+
+```yaml
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+See `bureau/data/env.example` for the canonical list of variables bureau reads.
 
 **Spec Kit** — required for the spec-driven development workflow
 ```sh
