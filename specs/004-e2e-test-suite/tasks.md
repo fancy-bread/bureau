@@ -16,9 +16,9 @@
 
 **Purpose**: Add new dependencies and create the e2e test directory before any implementation begins.
 
-- [ ] T001 Add `python-dotenv>=1.0` to `[project.dependencies]` in `pyproject.toml`
-- [ ] T002 Add `pytest-timeout>=2.3` to `[project.optional-dependencies] dev` in `pyproject.toml`
-- [ ] T003 Create `tests/e2e/__init__.py` (empty package init)
+- [x] T001 Add `python-dotenv>=1.0` to `[project.dependencies]` in `pyproject.toml`
+- [x] T002 Add `pytest-timeout>=2.3` to `[project.optional-dependencies] dev` in `pyproject.toml`
+- [x] T003 Create `tests/e2e/__init__.py` (empty package init)
 
 ---
 
@@ -30,10 +30,10 @@
 
 **⚠️ CRITICAL**: Blocks all E2E user story phases — without dotenv loading, E2E tests can only run if the key is already in the shell environment.
 
-- [ ] T004 [US5] Add `from dotenv import load_dotenv` and `load_dotenv(Path.home() / ".bureau" / ".env", override=False)` at the top of the CLI entrypoint callback in `bureau/cli.py`, before any subcommand executes; import `Path` from `pathlib`
-- [ ] T005 [US5] Add key-presence guard in `bureau/cli.py`: in the Typer root callback (decorated with `@app.callback(invoke_without_command=True)`), after `load_dotenv`, check `os.environ.get("ANTHROPIC_API_KEY")`; if absent AND `ctx.invoked_subcommand in ("run", "resume")`, print `"[bureau] error: ANTHROPIC_API_KEY not set — add it to ~/.bureau/.env or export it in your shell"` and `raise typer.Exit(1)`; guard MUST NOT fire for `bureau --help`, `bureau list`, or `bureau abort`
-- [ ] T006 [P] [US5] Create `bureau/data/env.example` with `ANTHROPIC_API_KEY=sk-ant-api03-your-key-here` and explanatory comment per `specs/004-e2e-test-suite/contracts/env-example.md`
-- [ ] T007 [P] [US5] Add unit tests in `tests/unit/test_dotenv_loading.py` — test: (a) key loaded from `.env` file when not in shell env, (b) shell env value takes precedence over file value, (c) missing `.env` file does not raise, (d) missing key on a persona-invoking command prints human-readable error and exits 1; use `tmp_path` and `monkeypatch` to isolate `os.environ` and file system
+- [x] T004 [US5] Add `from dotenv import load_dotenv` and `load_dotenv(Path.home() / ".bureau" / ".env", override=False)` at the top of the CLI entrypoint callback in `bureau/cli.py`, before any subcommand executes; import `Path` from `pathlib`
+- [x] T005 [US5] Add key-presence guard in `bureau/cli.py`: in the Typer root callback (decorated with `@app.callback(invoke_without_command=True)`), after `load_dotenv`, check `os.environ.get("ANTHROPIC_API_KEY")`; if absent AND `ctx.invoked_subcommand in ("run", "resume")`, print `"[bureau] error: ANTHROPIC_API_KEY not set — add it to ~/.bureau/.env or export it in your shell"` and `raise typer.Exit(1)`; guard MUST NOT fire for `bureau --help`, `bureau list`, or `bureau abort`
+- [x] T006 [P] [US5] Create `bureau/data/env.example` with `ANTHROPIC_API_KEY=sk-ant-api03-your-key-here` and explanatory comment per `specs/004-e2e-test-suite/contracts/env-example.md`
+- [x] T007 [P] [US5] Add unit tests in `tests/unit/test_dotenv_loading.py` — test: (a) key loaded from `.env` file when not in shell env, (b) shell env value takes precedence over file value, (c) missing `.env` file does not raise, (d) missing key on a persona-invoking command prints human-readable error and exits 1; use `tmp_path` and `monkeypatch` to isolate `os.environ` and file system
 
 **Checkpoint**: `pytest tests/unit/test_dotenv_loading.py` passes. `bureau --help` works with no key set. Bureau exits with clean error when key is absent and a persona node would be called.
 
@@ -45,8 +45,8 @@
 
 **Independent Test**: Run `pytest tests/e2e/ -v` with `BUREAU_TEST_REPO` absent — all tests skip with a clear message. Run with `ANTHROPIC_API_KEY` absent — all tests skip. Both produce exit code 0.
 
-- [ ] T008 [US4] Create `tests/e2e/conftest.py` with: (a) module-level skip constants: `SKIP_NO_REPO = pytest.mark.skipif(not os.environ.get("BUREAU_TEST_REPO"), reason="BUREAU_TEST_REPO not set")` and `SKIP_NO_KEY = pytest.mark.skipif(not (os.environ.get("ANTHROPIC_API_KEY") or (Path.home()/".bureau/".env").exists() and "ANTHROPIC_API_KEY" in dotenv_values(Path.home()/".bureau/".env")), reason="ANTHROPIC_API_KEY not set in shell or ~/.bureau/.env")` — the key check MUST read from both `os.environ` and `~/.bureau/.env` via `dotenv_values()` since load_dotenv runs in the bureau subprocess, not the test process; (b) session-scoped `bureau_test_repo` fixture that reads `BUREAU_TEST_REPO`, asserts the path exists, runs `git -C <path> checkout main && git -C <path> pull` before `yield path`, then runs `git -C <path> checkout main` again in teardown (after yield) to leave the repo clean; (c) `run_bureau(spec_path: str, repo_path: str) -> subprocess.CompletedProcess` helper using `subprocess.run([bureau_exe(), "run", spec_path, "--repo", repo_path], capture_output=True, text=True, timeout=600)` — note: 600s subprocess timeout; use `@pytest.mark.timeout(650)` on tests for a 50s pytest-level safety net
-- [ ] T009 [US4] Create `tests/e2e/test_bureau_e2e.py` skeleton — module-level `pytestmark` applying both skip conditions from conftest; import fixtures; no test functions yet (added in subsequent phases)
+- [x] T008 [US4] Create `tests/e2e/conftest.py` with: (a) module-level skip constants: `SKIP_NO_REPO = pytest.mark.skipif(not os.environ.get("BUREAU_TEST_REPO"), reason="BUREAU_TEST_REPO not set")` and `SKIP_NO_KEY = pytest.mark.skipif(not (os.environ.get("ANTHROPIC_API_KEY") or (Path.home()/".bureau/".env").exists() and "ANTHROPIC_API_KEY" in dotenv_values(Path.home()/".bureau/".env")), reason="ANTHROPIC_API_KEY not set in shell or ~/.bureau/.env")` — the key check MUST read from both `os.environ` and `~/.bureau/.env` via `dotenv_values()` since load_dotenv runs in the bureau subprocess, not the test process; (b) session-scoped `bureau_test_repo` fixture that reads `BUREAU_TEST_REPO`, asserts the path exists, runs `git -C <path> checkout main && git -C <path> pull` before `yield path`, then runs `git -C <path> checkout main` again in teardown (after yield) to leave the repo clean; (c) `run_bureau(spec_path: str, repo_path: str) -> subprocess.CompletedProcess` helper using `subprocess.run([bureau_exe(), "run", spec_path, "--repo", repo_path], capture_output=True, text=True, timeout=600)` — note: 600s subprocess timeout; use `@pytest.mark.timeout(650)` on tests for a 50s pytest-level safety net
+- [x] T009 [US4] Create `tests/e2e/test_bureau_e2e.py` skeleton — module-level `pytestmark` applying both skip conditions from conftest; import fixtures; no test functions yet (added in subsequent phases)
 
 **Checkpoint**: `pytest tests/e2e/ -v` with missing env vars → all skipped, exit 0.
 
@@ -58,7 +58,7 @@
 
 **Independent Test**: `pytest tests/e2e/ -k test_smoke_hello_world -v` passes with env vars set.
 
-- [ ] T010 [US1] Implement `test_smoke_hello_world` in `tests/e2e/test_bureau_e2e.py` with `@pytest.mark.timeout(650)`: run bureau against `specs/001-smoke-hello-world/spec.md`; assert exit code 0; assert `"[bureau] run.completed"` in stdout; assert a `https://github.com/` URL appears in stdout
+- [x] T010 [US1] Implement `test_smoke_hello_world` in `tests/e2e/test_bureau_e2e.py` with `@pytest.mark.timeout(650)`: run bureau against `specs/001-smoke-hello-world/spec.md`; assert exit code 0; assert `"[bureau] run.completed"` in stdout; assert a `https://github.com/` URL appears in stdout
 
 **Checkpoint**: Smoke test asserts completion and PR URL.
 
@@ -70,8 +70,8 @@
 
 **Independent Test**: The assertions extend `test_smoke_hello_world` — no additional API call needed.
 
-- [ ] T011 [US2] Add `_assert_phase_order(stdout: str)` helper in `tests/e2e/test_bureau_e2e.py` — extracts all `[bureau] phase.started phase=X` and `phase.completed phase=X` lines; asserts the six phases appear in order `validate_spec → repo_analysis → planner → builder → critic → pr_create`; asserts each `started` precedes its matching `completed`
-- [ ] T012 [US2] Extend `test_smoke_hello_world` to call `_assert_phase_order(result.stdout)`; assert at least one `ralph.attempt` line contains `round=` `attempt=` and `result=pass`; assert `run.completed` line contains both `pr=` and `duration=` fields
+- [x] T011 [US2] Add `_assert_phase_order(stdout: str)` helper in `tests/e2e/test_bureau_e2e.py` — extracts all `[bureau] phase.started phase=X` and `phase.completed phase=X` lines; asserts the six phases appear in order `validate_spec → repo_analysis → planner → builder → critic → pr_create`; asserts each `started` precedes its matching `completed`
+- [x] T012 [US2] Extend `test_smoke_hello_world` to call `_assert_phase_order(result.stdout)`; assert at least one `ralph.attempt` line contains `round=` `attempt=` and `result=pass`; assert `run.completed` line contains both `pr=` and `duration=` fields
 
 **Checkpoint**: `test_smoke_hello_world` now validates completion, PR URL, phase order, ralph events, and run.completed fields.
 
@@ -83,7 +83,7 @@
 
 **Independent Test**: `pytest tests/e2e/ -k test_escalation_missing_artifact -v` — passes (or xfails) with env vars set.
 
-- [ ] T013 [US3] Implement `test_escalation_missing_artifact` in `tests/e2e/test_bureau_e2e.py` with `@pytest.mark.timeout(650)` and `@pytest.mark.xfail(strict=False, reason="Planner may complete spec 004 instead of escalating — AI behaviour is non-deterministic")`: run bureau against `specs/004-escalation-missing-schema/spec.md`; assert `"[bureau] run.escalated"` in stdout; assert no `"https://github.com/"` URL in stdout; assert escalation output contains `"What happened"` and `"What's needed"`
+- [x] T013 [US3] Implement `test_escalation_missing_artifact` in `tests/e2e/test_bureau_e2e.py` with `@pytest.mark.timeout(650)` and `@pytest.mark.xfail(strict=False, reason="Planner may complete spec 004 instead of escalating — AI behaviour is non-deterministic")`: run bureau against `specs/004-escalation-missing-schema/spec.md`; assert `"[bureau] run.escalated"` in stdout; assert no `"https://github.com/"` URL in stdout; assert escalation output contains `"What happened"` and `"What's needed"`
 
 **Checkpoint**: Escalation test runs and either passes or xfails gracefully.
 
@@ -91,8 +91,8 @@
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T014 [P] Create `.github/workflows/e2e.yml` — `on: workflow_dispatch`; jobs: checkout bureau to `.`, checkout `fancy-bread/bureau-test` to `bureau-test/`; `pip install -e ".[dev]"`; `pytest tests/e2e/ -v --timeout=650` with `env: ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}`, `BUREAU_TEST_REPO: ${{ github.workspace }}/bureau-test`, `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`
-- [ ] T015 [P] Update `README.md` — add "Credential Setup" section explaining `~/.bureau/.env` for local dev, `ANTHROPIC_API_KEY` shell env for CI, and reference to `bureau/data/env.example` as the canonical variable list
+- [x] T014 [P] Create `.github/workflows/e2e.yml` — `on: workflow_dispatch`; jobs: checkout bureau to `.`, checkout `fancy-bread/bureau-test` to `bureau-test/`; `pip install -e ".[dev]"`; `pytest tests/e2e/ -v --timeout=650` with `env: ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}`, `BUREAU_TEST_REPO: ${{ github.workspace }}/bureau-test`, `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`
+- [x] T015 [P] Update `README.md` — add "Credential Setup" section explaining `~/.bureau/.env` for local dev, `ANTHROPIC_API_KEY` shell env for CI, and reference to `bureau/data/env.example` as the canonical variable list
 
 ---
 

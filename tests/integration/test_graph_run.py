@@ -34,12 +34,15 @@ def _bureau_exe() -> str:
     return str(Path(sys.executable).parent / "bureau")
 
 
-def _run_bureau(*args: str) -> subprocess.CompletedProcess[str]:
+def _run_bureau(*args: str, api_key: str = "sk-ant-test-dummy") -> subprocess.CompletedProcess[str]:
+    import os
+    env = {**os.environ, "ANTHROPIC_API_KEY": api_key}
     return subprocess.run(
         [_bureau_exe(), *args],
         capture_output=True,
         text=True,
         cwd=Path(__file__).parents[2],
+        env=env,
     )
 
 

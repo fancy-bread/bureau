@@ -13,6 +13,7 @@ dependencies = [
     "typer>=0.12",
     "pydantic>=2",
     "anthropic>=0.25",
+    "python-dotenv>=1.0",
 ]
 
 [project.scripts]
@@ -22,12 +23,13 @@ bureau = "bureau.cli:app"
 include = ["bureau*"]
 
 [tool.setuptools.package-data]
-bureau = ["data/*.md"]
+bureau = ["data/*.md", "data/env.example"]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
     "pytest-cov",
+    "pytest-timeout>=2.3",
     "ruff>=0.9",
 ]
 
