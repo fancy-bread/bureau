@@ -121,6 +121,8 @@ A developer runs bureau alongside Claude Code in the same shell. Bureau's Anthro
 - **FR-014**: If `~/.bureau/.env` does not exist, bureau MUST start normally with no error or warning
 - **FR-015**: If `ANTHROPIC_API_KEY` is not resolvable after loading `~/.bureau/.env`, bureau MUST exit with a human-readable error message (e.g. `"ANTHROPIC_API_KEY not set — add it to ~/.bureau/.env or export it in your shell"`) rather than propagating an Anthropic SDK exception
 - **FR-016**: `python-dotenv` MUST be added to bureau's runtime dependencies in `pyproject.toml`
+- **FR-017**: Bureau MUST ship a `bureau/data/env.example` file listing all supported environment variables with placeholder values and a one-line comment per var explaining its purpose; this file MUST be referenced in bureau's README as the canonical credential setup guide
+- **FR-018**: The CI workflow (`.github/workflows/e2e.yml`) MUST read `ANTHROPIC_API_KEY` from a GitHub Actions secret and export it as an environment variable — no `.env` file is written in CI; the `~/.bureau/.env` mechanism is a local-dev convenience only
 
 ### Non-Functional Requirements
 
