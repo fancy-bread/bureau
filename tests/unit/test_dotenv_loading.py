@@ -45,7 +45,9 @@ def test_missing_key_exits_with_readable_error(tmp_path, monkeypatch):
     import shutil
 
     bureau_exe = shutil.which("bureau") or str(Path(sys.executable).parent / "bureau")
+    # Override HOME so dotenv cannot load the real ~/.bureau/.env
     env = {k: v for k, v in __import__("os").environ.items() if k != "ANTHROPIC_API_KEY"}
+    env["HOME"] = str(tmp_path)
     result = subprocess.run(
         [bureau_exe, "run", "spec.md"],
         capture_output=True,

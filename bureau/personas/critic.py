@@ -87,9 +87,7 @@ def run_critic(
         messages=messages,
     )
 
-    final_text = "".join(
-        block.text for block in response.content if hasattr(block, "text")
-    )
+    final_text = "".join(block.text for block in response.content if hasattr(block, "text"))
 
     m = _JSON_PATTERN.search(final_text)
     json_text = m.group(0) if m else final_text.strip()

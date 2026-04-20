@@ -20,16 +20,15 @@ def pr_create_node(state: dict[str, Any]) -> dict[str, Any]:
         spec = state.get("spec")
 
         spec_name = spec.name if spec else Path(spec_path).stem
-        branch = spec.branch if spec else f"bureau/{run_id[:8]}"
+        branch = state.get("branch_name") or (spec.branch if spec else f"feat/unknown-{run_id[:8]}")
 
         ralph_rounds_dicts = state.get("ralph_rounds", [])
         critic_findings_dicts = state.get("critic_findings", [])
         critic_findings = [CriticFinding.model_validate(f) for f in critic_findings_dicts]
 
-        frs_addressed = sorted({
-            f.ref_id for f in critic_findings
-            if f.type == "requirement" and f.verdict == "met"
-        })
+        frs_addressed = sorted(
+            {f.ref_id for f in critic_findings if f.type == "requirement" and f.verdict == "met"}
+        )
 
         critic_verdict = (
             ralph_rounds_dicts[-1].get("critic_verdict", "pass") if ralph_rounds_dicts else "pass"
@@ -139,9 +138,7 @@ def _render_pr_body(summary: RunSummary) -> str:
     return "\n".join(lines)
 
 
-def _escalate(
-    state: dict[str, Any], reason: str, escalation_reason: EscalationReason
-) -> dict[str, Any]:
+def _escalate(state: dict[str, Any], reason: str, escalation_reason: EscalationReason) -> dict[str, Any]:
     escalation = Escalation(
         run_id=state["run_id"],
         phase=Phase.PR_CREATE,

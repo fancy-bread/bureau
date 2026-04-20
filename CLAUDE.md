@@ -79,6 +79,8 @@ is mandatory. When editing extensions.yml, `optional: false` + `condition: null`
 - SQLite per-run checkpoint (existing); memory.json per-run scratchpad (existing — extended for task plan and build attempt history) (002-personas-pr-creation)
 - Python 3.12+ + `python-dotenv>=1.0` (new runtime), `pytest-timeout>=2.3` (new dev dep), `subprocess` + `os` (stdlib), `gh` CLI (external, pre-installed on ubuntu-latest) (004-e2e-test-suite)
 - `~/.bureau/.env` (user-managed, never version-controlled) (004-e2e-test-suite)
+- Python 3.14 + `subprocess` (stdlib), `git` CLI (assumed present), `gh` CLI (existing) (005-builder-git-workflow)
+- LangGraph state (existing `SqliteSaver` checkpoint) (005-builder-git-workflow)
 
 ## Recent Changes
 - 001-autonomous-runtime-core: Added Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic

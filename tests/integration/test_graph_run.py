@@ -6,12 +6,7 @@ from pathlib import Path
 
 import pytest
 
-SPEC_PATH = str(
-    Path(__file__).parents[2]
-    / "specs"
-    / "001-autonomous-runtime-core"
-    / "spec.md"
-)
+SPEC_PATH = str(Path(__file__).parents[2] / "specs" / "001-autonomous-runtime-core" / "spec.md")
 
 _BUREAU_CONFIG = """
 [runtime]
@@ -36,6 +31,7 @@ def _bureau_exe() -> str:
 
 def _run_bureau(*args: str, api_key: str = "sk-ant-test-dummy") -> subprocess.CompletedProcess[str]:
     import os
+
     env = {**os.environ, "ANTHROPIC_API_KEY": api_key}
     return subprocess.run(
         [_bureau_exe(), *args],
@@ -81,6 +77,30 @@ def test_resume_unknown_run_id_exits_with_error() -> None:
     result = _run_bureau("resume", "run-00000000")
     assert result.returncode == 1
     assert "not found" in result.stderr.lower() or "not found" in result.stdout.lower()
+
+
+def test_dirty_repo_escalates(tmp_path: Path) -> None:
+    bureau_dir = tmp_path / ".bureau"
+    bureau_dir.mkdir()
+    (bureau_dir / "config.toml").write_text(_BUREAU_CONFIG)
+
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "--allow-empty", "-m", "init"],
+        cwd=tmp_path,
+        capture_output=True,
+        env={
+            **__import__("os").environ,
+            "GIT_AUTHOR_NAME": "test",
+            "GIT_AUTHOR_EMAIL": "t@t.com",
+            "GIT_COMMITTER_NAME": "test",
+            "GIT_COMMITTER_EMAIL": "t@t.com",
+        },
+    )
+    (tmp_path / "dirty.txt").write_text("dirty\n")
+
+    result = _run_bureau("run", SPEC_PATH, "--repo", str(tmp_path))
+    assert "DIRTY_REPO" in result.stdout
 
 
 @pytest.mark.skip(reason="Depends on stub-era E2E full run completing; requires Anthropic API + gh CLI")

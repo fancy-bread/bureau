@@ -15,17 +15,16 @@ def _assert_phase_order(stdout: str) -> None:
         "validate_spec",
         "repo_analysis",
         "planner",
-        "builder",
-        "critic",
+        "git_commit",
         "pr_create",
     ]
     started: dict[str, int] = {}
     completed: dict[str, int] = {}
     for i, line in enumerate(stdout.splitlines()):
-        m_start = re.search(r"phase\.started phase=(\S+)", line)
+        m_start = re.search(r"phase\.started\s+phase=(\S+)", line)
         if m_start:
             started[m_start.group(1)] = i
-        m_done = re.search(r"phase\.completed phase=(\S+)", line)
+        m_done = re.search(r"phase\.completed\s+phase=(\S+)", line)
         if m_done:
             completed[m_done.group(1)] = i
 

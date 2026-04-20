@@ -137,7 +137,5 @@ def _parse_list_section(text: str, section_name: str) -> list[str]:
         return []
     block = m.group(1)
     return [
-        line.lstrip("-* ").strip()
-        for line in block.splitlines()
-        if line.strip().startswith(("-", "*"))
+        line.lstrip("-* ").strip() for line in block.splitlines() if line.strip().startswith(("-", "*"))
     ]

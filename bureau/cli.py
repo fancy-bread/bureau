@@ -66,6 +66,7 @@ def run(
     thread_config = {"configurable": {"thread_id": run_id}}
 
     import time
+
     start = time.monotonic()
     try:
         for _ in compiled.stream(initial_state, config=thread_config):
@@ -110,6 +111,7 @@ def resume(
     thread_config = {"configurable": {"thread_id": run_id}}
 
     import time
+
     start = time.monotonic()
     events.emit(events.RUN_STARTED, id=run_id, spec=record.spec_path, repo=record.repo_path)
 

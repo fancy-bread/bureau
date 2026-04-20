@@ -18,10 +18,7 @@ SKIP_NO_REPO = pytest.mark.skipif(
 SKIP_NO_KEY = pytest.mark.skipif(
     not (
         os.environ.get("ANTHROPIC_API_KEY")
-        or (
-            _bureau_env_file.exists()
-            and "ANTHROPIC_API_KEY" in dotenv_values(_bureau_env_file)
-        )
+        or (_bureau_env_file.exists() and "ANTHROPIC_API_KEY" in dotenv_values(_bureau_env_file))
     ),
     reason="ANTHROPIC_API_KEY not set in shell or ~/.bureau/.env",
 )

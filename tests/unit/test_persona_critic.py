@@ -145,11 +145,7 @@ def test_run_critic_forces_escalate_on_constitution_violation():
 def test_run_critic_passes_fr_lines_to_prompt():
     """Critic extracts FR lines from spec_text for the prompt."""
     spec_text = (
-        "# My Feature\n\n"
-        "## Requirements\n\n"
-        "- **FR-001**: Do X.\n"
-        "- **FR-002**: Do Y.\n"
-        "Some other text.\n"
+        "# My Feature\n\n## Requirements\n\n- **FR-001**: Do X.\n- **FR-002**: Do Y.\nSome other text.\n"
     )
 
     client = _make_client(_PASS_VERDICT)

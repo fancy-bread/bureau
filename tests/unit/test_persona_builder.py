@@ -34,9 +34,7 @@ def _make_response(content: list, stop_reason: str = "end_turn") -> MagicMock:
 
 def test_run_builder_attempt_passes_on_exit_code_zero(tmp_path):
     """Builder returns a passing BuildAttempt when run_command exits 0."""
-    run_cmd_block = _make_tool_use_block(
-        "run_command", "tool_1", {"command": "pytest"}
-    )
+    run_cmd_block = _make_tool_use_block("run_command", "tool_1", {"command": "pytest"})
     tool_response = _make_response([run_cmd_block], stop_reason="tool_use")
 
     final_response = _make_response([_make_text_block("Done.")], stop_reason="end_turn")
@@ -74,9 +72,7 @@ def test_run_builder_attempt_passes_on_exit_code_zero(tmp_path):
 
 def test_run_builder_attempt_fails_on_nonzero_exit(tmp_path):
     """Builder returns a failing BuildAttempt when run_command exits non-zero."""
-    run_cmd_block = _make_tool_use_block(
-        "run_command", "tool_1", {"command": "pytest"}
-    )
+    run_cmd_block = _make_tool_use_block("run_command", "tool_1", {"command": "pytest"})
     tool_response = _make_response([run_cmd_block], stop_reason="tool_use")
     final_response = _make_response([_make_text_block("Done.")], stop_reason="end_turn")
 

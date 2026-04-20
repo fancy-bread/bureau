@@ -55,9 +55,7 @@ def create_run(spec_path: str, repo_path: str) -> RunRecord:
 
 def write_run_record(record: RunRecord) -> None:
     record.updated_at = _now()
-    _record_path(record.run_id).write_text(
-        json.dumps(record.__dict__, indent=2, default=str)
-    )
+    _record_path(record.run_id).write_text(json.dumps(record.__dict__, indent=2, default=str))
 
 
 def get_run(run_id: str) -> RunRecord:
@@ -95,9 +93,7 @@ def abort_run(run_id: str) -> None:
 def resume_run(run_id: str, response: str = "") -> RunRecord:
     record = get_run(run_id)
     if record.status != RunStatus.PAUSED:
-        raise RunNotPausedError(
-            f"Run {run_id} is not paused (status: {record.status})"
-        )
+        raise RunNotPausedError(f"Run {run_id} is not paused (status: {record.status})")
     record.status = RunStatus.RUNNING
     write_run_record(record)
     return record
@@ -120,7 +116,7 @@ def init_repo(repo_path: str) -> str:
         'lint_cmd    = ""\n'
         "\n"
         "[bureau]\n"
-        "# constitution = \".bureau/constitution.md\""
+        '# constitution = ".bureau/constitution.md"'
         "  # uncomment to use a project-specific constitution\n"
     )
     return "created"

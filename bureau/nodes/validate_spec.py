@@ -21,9 +21,7 @@ def validate_spec_node(state: dict[str, Any]) -> dict[str, Any]:
         if not p1_stories:
             return _escalate(state, "Spec has no P1 user stories.")
 
-        needs_clarification = [
-            fr.id for fr in spec.functional_requirements if fr.needs_clarification
-        ]
+        needs_clarification = [fr.id for fr in spec.functional_requirements if fr.needs_clarification]
         if needs_clarification:
             return _escalate(
                 state,
