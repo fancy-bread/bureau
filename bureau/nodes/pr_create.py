@@ -20,7 +20,7 @@ def pr_create_node(state: dict[str, Any]) -> dict[str, Any]:
         spec = state.get("spec")
 
         spec_name = spec.name if spec else Path(spec_path).stem
-        branch = spec.branch if spec else f"bureau/{run_id[:8]}"
+        branch = state.get("branch_name") or (spec.branch if spec else f"feat/unknown-{run_id[:8]}")
 
         ralph_rounds_dicts = state.get("ralph_rounds", [])
         critic_findings_dicts = state.get("critic_findings", [])

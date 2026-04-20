@@ -83,6 +83,25 @@ def test_resume_unknown_run_id_exits_with_error() -> None:
     assert "not found" in result.stderr.lower() or "not found" in result.stdout.lower()
 
 
+def test_dirty_repo_escalates(tmp_path: Path) -> None:
+    bureau_dir = tmp_path / ".bureau"
+    bureau_dir.mkdir()
+    (bureau_dir / "config.toml").write_text(_BUREAU_CONFIG)
+
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "--allow-empty", "-m", "init"],
+        cwd=tmp_path,
+        capture_output=True,
+        env={**__import__("os").environ, "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "t@t.com",
+             "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "t@t.com"},
+    )
+    (tmp_path / "dirty.txt").write_text("dirty\n")
+
+    result = _run_bureau("run", SPEC_PATH, "--repo", str(tmp_path))
+    assert "DIRTY_REPO" in result.stdout
+
+
 @pytest.mark.skip(reason="Depends on stub-era E2E full run completing; requires Anthropic API + gh CLI")
 def test_resume_completed_run_exits_with_error(target_repo: Path) -> None:
     run_result = _run_bureau("run", SPEC_PATH, "--repo", str(target_repo))

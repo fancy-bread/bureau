@@ -11,6 +11,7 @@ from bureau.config import BureauConfig
 from bureau.nodes.builder import builder_node
 from bureau.nodes.critic import critic_node
 from bureau.nodes.escalate import escalate_node
+from bureau.nodes.git_commit import git_commit_node
 from bureau.nodes.memory_node import memory_node
 from bureau.nodes.planner import planner_node
 from bureau.nodes.pr_create import pr_create_node
@@ -30,6 +31,10 @@ def _route_critic(state: dict[str, Any]) -> str:
     return state.get("_route", "pass")  # critic_node sets _route: pass | revise | escalate
 
 
+def _route_git_commit(state: dict[str, Any]) -> str:
+    return state.get("_route", "ok")
+
+
 def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     checkpoint_path = Path.home() / ".bureau" / "runs" / run_id / "checkpoint.db"
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,6 +47,7 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     graph.add_node("planner", planner_node)
     graph.add_node("builder", builder_node)
     graph.add_node("critic", critic_node)
+    graph.add_node("git_commit", git_commit_node)
     graph.add_node("pr_create", pr_create_node)
     graph.add_node("escalate", escalate_node)
 
@@ -67,7 +73,12 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     graph.add_conditional_edges(
         "critic",
         _route_critic,
-        {"pass": "pr_create", "revise": "builder", "escalate": "escalate"},
+        {"pass": "git_commit", "revise": "builder", "escalate": "escalate"},
+    )
+    graph.add_conditional_edges(
+        "git_commit",
+        _route_git_commit,
+        {"ok": "pr_create", "escalate": "escalate"},
     )
     graph.add_edge("pr_create", END)
     graph.add_edge("escalate", END)

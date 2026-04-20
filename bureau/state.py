@@ -12,6 +12,7 @@ class Phase(StrEnum):
     PLANNER = "planner"
     BUILDER = "builder"
     CRITIC = "critic"
+    GIT_COMMIT = "git_commit"
     PR_CREATE = "pr_create"
     ESCALATE = "escalate"
     COMPLETE = "complete"
@@ -37,6 +38,9 @@ class EscalationReason(StrEnum):
     RALPH_ROUNDS_EXCEEDED = "RALPH_ROUNDS_EXCEEDED"
     CONSTITUTION_VIOLATION = "CONSTITUTION_VIOLATION"
     PR_FAILED = "PR_FAILED"
+    DIRTY_REPO = "DIRTY_REPO"
+    GIT_PUSH_FAILED = "GIT_PUSH_FAILED"
+    GIT_BRANCH_EXISTS = "GIT_BRANCH_EXISTS"
 
 
 @dataclass
@@ -129,4 +133,5 @@ def make_initial_state(run_id: str, spec_path: str, repo_path: str) -> dict[str,
         "ralph_rounds": [],
         "critic_findings": [],
         "run_summary": None,
+        "branch_name": "",
     }
