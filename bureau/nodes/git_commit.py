@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from bureau import events
 from bureau.state import Escalation, EscalationReason, Phase
-from datetime import datetime, timezone
 
 
 def git_commit_node(state: dict[str, Any]) -> dict[str, Any]:

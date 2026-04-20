@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-import re
-from pathlib import Path
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from bureau.nodes.git_commit import git_commit_node
-from bureau.state import EscalationReason, Phase
+from bureau.state import EscalationReason
 
 
 def _make_state(**overrides):
@@ -45,7 +41,7 @@ class TestBranchNameDerivation:
             return result
 
         with patch("bureau.nodes.git_commit.subprocess.run", side_effect=mock_run):
-            out = git_commit_node(state)
+            git_commit_node(state)
 
         assert branch_calls, "checkout -b not called"
         branch_arg = branch_calls[0][-1]
