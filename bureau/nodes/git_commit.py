@@ -74,9 +74,7 @@ def git_commit_node(state: dict[str, Any]) -> dict[str, Any]:
     return {**state, "branch_name": branch_name, "phase": Phase.PR_CREATE, "_route": "ok"}
 
 
-def _escalate(
-    state: dict[str, Any], what_happened: str, reason: EscalationReason
-) -> dict[str, Any]:
+def _escalate(state: dict[str, Any], what_happened: str, reason: EscalationReason) -> dict[str, Any]:
     escalation = Escalation(
         run_id=state["run_id"],
         phase=Phase.GIT_COMMIT,

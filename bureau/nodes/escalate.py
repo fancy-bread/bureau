@@ -26,7 +26,7 @@ def escalate_node(state: dict[str, Any]) -> dict[str, Any]:
         for i, opt in enumerate(esc.options, 1):
             print(f"    {i}. {opt}")
         print()
-        print(f"  Resume: bureau resume {run_id} --response \"...\"")
+        print(f'  Resume: bureau resume {run_id} --response "..."')
     else:
         events.emit(
             events.RUN_ESCALATED, id=run_id, phase=state.get("phase", "unknown"), reason="UNKNOWN"

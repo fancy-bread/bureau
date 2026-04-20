@@ -62,9 +62,7 @@ def planner_node(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _escalate(
-    state: dict[str, Any], reason: str, escalation_reason: EscalationReason
-) -> dict[str, Any]:
+def _escalate(state: dict[str, Any], reason: str, escalation_reason: EscalationReason) -> dict[str, Any]:
     escalation = Escalation(
         run_id=state["run_id"],
         phase=Phase.PLANNER,

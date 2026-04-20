@@ -129,9 +129,7 @@ def _format_task_plan(task_plan_dict: dict | None) -> str:
         return str(task_plan_dict)
 
 
-def _escalate(
-    state: dict[str, Any], reason: str, escalation_reason: EscalationReason
-) -> dict[str, Any]:
+def _escalate(state: dict[str, Any], reason: str, escalation_reason: EscalationReason) -> dict[str, Any]:
     escalation = Escalation(
         run_id=state["run_id"],
         phase=Phase.BUILDER,

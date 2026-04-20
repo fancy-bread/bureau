@@ -24,9 +24,7 @@ SHELL_TOOLS = [
 ]
 
 
-def execute_shell_tool(
-    tool_name: str, tool_input: dict, repo_path: str, timeout: int = 300
-) -> str:
+def execute_shell_tool(tool_name: str, tool_input: dict, repo_path: str, timeout: int = 300) -> str:
     if tool_name == "run_command":
         try:
             result = subprocess.run(
@@ -39,9 +37,7 @@ def execute_shell_tool(
             )
             stdout = result.stdout[-4000:] if len(result.stdout) > 4000 else result.stdout
             stderr = result.stderr[-4000:] if len(result.stderr) > 4000 else result.stderr
-            return json.dumps(
-                {"stdout": stdout, "stderr": stderr, "exit_code": result.returncode}
-            )
+            return json.dumps({"stdout": stdout, "stderr": stderr, "exit_code": result.returncode})
         except subprocess.TimeoutExpired:
             return json.dumps(
                 {"stdout": "", "stderr": f"Command timed out after {timeout}s", "exit_code": -1}

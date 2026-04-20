@@ -99,18 +99,14 @@ def run_planner(
         for block in response.content:
             if block.type == "tool_use":
                 result = execute_file_tool(block.name, block.input, repo_path)
-                tool_results.append(
-                    {"type": "tool_result", "tool_use_id": block.id, "content": result}
-                )
+                tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
 
         messages.append({"role": "user", "content": tool_results})
 
     if response is None:
         raise RuntimeError("Planner produced no response")
 
-    final_text = "".join(
-        block.text for block in response.content if hasattr(block, "text")
-    )
+    final_text = "".join(block.text for block in response.content if hasattr(block, "text"))
 
     m = _JSON_BLOCK.search(final_text)
     json_text = m.group(1) if m else final_text.strip()

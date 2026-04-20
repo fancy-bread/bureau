@@ -83,6 +83,7 @@ def test_planner_node_writes_task_plan_to_state(tmp_path):
     state = make_initial_state("run-test-001", str(spec_file), str(tmp_path))
     # Simulate validate_spec having run
     from bureau.spec_parser import parse_spec
+
     state["spec"] = parse_spec(str(spec_file))
     state["spec_text"] = _SPEC_CONTENT
     state["repo_context"] = repo_context
@@ -122,6 +123,7 @@ def test_planner_node_escalates_on_uncovered_p1_fr(tmp_path):
     )
     state = make_initial_state("run-test-002", str(spec_file), str(tmp_path))
     from bureau.spec_parser import parse_spec
+
     state["spec"] = parse_spec(str(spec_file))
     state["spec_text"] = _SPEC_CONTENT
     state["repo_context"] = repo_context

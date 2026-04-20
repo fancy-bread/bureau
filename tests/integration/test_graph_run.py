@@ -6,12 +6,7 @@ from pathlib import Path
 
 import pytest
 
-SPEC_PATH = str(
-    Path(__file__).parents[2]
-    / "specs"
-    / "001-autonomous-runtime-core"
-    / "spec.md"
-)
+SPEC_PATH = str(Path(__file__).parents[2] / "specs" / "001-autonomous-runtime-core" / "spec.md")
 
 _BUREAU_CONFIG = """
 [runtime]
@@ -36,6 +31,7 @@ def _bureau_exe() -> str:
 
 def _run_bureau(*args: str, api_key: str = "sk-ant-test-dummy") -> subprocess.CompletedProcess[str]:
     import os
+
     env = {**os.environ, "ANTHROPIC_API_KEY": api_key}
     return subprocess.run(
         [_bureau_exe(), *args],
@@ -93,8 +89,13 @@ def test_dirty_repo_escalates(tmp_path: Path) -> None:
         ["git", "commit", "--allow-empty", "-m", "init"],
         cwd=tmp_path,
         capture_output=True,
-        env={**__import__("os").environ, "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "t@t.com",
-             "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "t@t.com"},
+        env={
+            **__import__("os").environ,
+            "GIT_AUTHOR_NAME": "test",
+            "GIT_AUTHOR_EMAIL": "t@t.com",
+            "GIT_COMMITTER_NAME": "test",
+            "GIT_COMMITTER_EMAIL": "t@t.com",
+        },
     )
     (tmp_path / "dirty.txt").write_text("dirty\n")
 

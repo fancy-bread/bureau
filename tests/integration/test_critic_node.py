@@ -6,35 +6,39 @@ from unittest.mock import MagicMock, patch
 from bureau.nodes.critic import critic_node
 from bureau.state import EscalationReason, RepoContext, make_initial_state
 
-_PASS_JSON = json.dumps({
-    "verdict": "pass",
-    "findings": [
-        {
-            "type": "requirement",
-            "ref_id": "FR-001",
-            "verdict": "met",
-            "detail": "Implemented.",
-            "remediation": "",
-        }
-    ],
-    "summary": "All good.",
-    "round": 0,
-})
+_PASS_JSON = json.dumps(
+    {
+        "verdict": "pass",
+        "findings": [
+            {
+                "type": "requirement",
+                "ref_id": "FR-001",
+                "verdict": "met",
+                "detail": "Implemented.",
+                "remediation": "",
+            }
+        ],
+        "summary": "All good.",
+        "round": 0,
+    }
+)
 
-_REVISE_JSON = json.dumps({
-    "verdict": "revise",
-    "findings": [
-        {
-            "type": "requirement",
-            "ref_id": "FR-001",
-            "verdict": "unmet",
-            "detail": "Not implemented.",
-            "remediation": "Implement it.",
-        }
-    ],
-    "summary": "FR-001 unmet.",
-    "round": 0,
-})
+_REVISE_JSON = json.dumps(
+    {
+        "verdict": "revise",
+        "findings": [
+            {
+                "type": "requirement",
+                "ref_id": "FR-001",
+                "verdict": "unmet",
+                "detail": "Not implemented.",
+                "remediation": "Implement it.",
+            }
+        ],
+        "summary": "FR-001 unmet.",
+        "round": 0,
+    }
+)
 
 
 def _make_client(response_text: str) -> MagicMock:

@@ -121,9 +121,7 @@ def _format_builder_summary(summary: dict) -> str:
     return "\n".join(lines)
 
 
-def _escalate(
-    state: dict[str, Any], reason: str, escalation_reason: EscalationReason
-) -> dict[str, Any]:
+def _escalate(state: dict[str, Any], reason: str, escalation_reason: EscalationReason) -> dict[str, Any]:
     what_needed = (
         "Revise the spec to remove the violating requirement."
         if escalation_reason == EscalationReason.CONSTITUTION_VIOLATION

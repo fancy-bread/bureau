@@ -33,9 +33,7 @@ def parse_repo_config(repo_path: str) -> RepoContext:
     runtime = data.get("runtime", {})
     missing = [f for f in _REQUIRED_FIELDS if not runtime.get(f, "").strip()]
     if missing:
-        raise ConfigInvalidError(
-            f".bureau/config.toml is missing required fields: {', '.join(missing)}"
-        )
+        raise ConfigInvalidError(f".bureau/config.toml is missing required fields: {', '.join(missing)}")
 
     bureau_section = data.get("bureau", {})
     ralph_loop = data.get("ralph_loop", {})

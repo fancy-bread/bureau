@@ -49,9 +49,7 @@ def repo_analysis_node(state: dict[str, Any]) -> dict[str, Any]:
     return {**state, "repo_context": repo_context, "phase": Phase.MEMORY, "_route": "ok"}
 
 
-def _escalate(
-    state: dict[str, Any], reason: str, escalation_reason: EscalationReason
-) -> dict[str, Any]:
+def _escalate(state: dict[str, Any], reason: str, escalation_reason: EscalationReason) -> dict[str, Any]:
     escalation = Escalation(
         run_id=state["run_id"],
         phase=Phase.REPO_ANALYSIS,

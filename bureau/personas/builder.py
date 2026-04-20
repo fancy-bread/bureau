@@ -124,9 +124,7 @@ def run_builder_attempt(
             else:
                 result = f"Error: unknown tool '{block.name}'"
 
-            tool_results.append(
-                {"type": "tool_result", "tool_use_id": block.id, "content": result}
-            )
+            tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
 
         messages.append({"role": "user", "content": tool_results})
 
