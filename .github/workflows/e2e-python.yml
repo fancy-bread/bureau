@@ -24,10 +24,11 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Configure git identity
+      - name: Configure git identity and credentials
         run: |
           git config --global user.email "bureau-ci@github-actions"
           git config --global user.name "Bureau CI"
+          git config --global url."https://x-access-token:${{ secrets.BUREAU_TEST_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Install bureau with dev dependencies
         run: pip install -e ".[dev]"
