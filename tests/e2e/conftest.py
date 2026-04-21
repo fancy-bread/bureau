@@ -11,8 +11,8 @@ from dotenv import dotenv_values
 _bureau_env_file = Path.home() / ".bureau" / ".env"
 
 SKIP_NO_REPO = pytest.mark.skipif(
-    not os.environ.get("BUREAU_TEST_REPO"),
-    reason="BUREAU_TEST_REPO not set",
+    not (os.environ.get("BUREAU_TEST_REPO_PYTHON") or os.environ.get("BUREAU_TEST_REPO")),
+    reason="BUREAU_TEST_REPO_PYTHON not set",
 )
 
 SKIP_NO_KEY = pytest.mark.skipif(
@@ -26,9 +26,9 @@ SKIP_NO_KEY = pytest.mark.skipif(
 
 @pytest.fixture(scope="session")
 def bureau_test_repo():
-    repo_path = os.environ.get("BUREAU_TEST_REPO")
-    assert repo_path, "BUREAU_TEST_REPO must be set"
-    assert Path(repo_path).exists(), f"BUREAU_TEST_REPO path does not exist: {repo_path}"
+    repo_path = os.environ.get("BUREAU_TEST_REPO_PYTHON") or os.environ.get("BUREAU_TEST_REPO")
+    assert repo_path, "BUREAU_TEST_REPO_PYTHON must be set"
+    assert Path(repo_path).exists(), f"BUREAU_TEST_REPO_PYTHON path does not exist: {repo_path}"
     subprocess.run(["git", "-C", repo_path, "checkout", "main"], check=True)
     subprocess.run(["git", "-C", repo_path, "pull"], check=True)
     yield repo_path
