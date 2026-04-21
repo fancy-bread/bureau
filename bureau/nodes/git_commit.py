@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -59,11 +60,21 @@ def git_commit_node(state: dict[str, Any]) -> dict[str, Any]:
             check=True,
         )
 
-        push_result = subprocess.run(
-            ["git", "-C", repo_path, "push", "origin", branch_name],
-            capture_output=True,
-            text=True,
-        )
+        _git_env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+        try:
+            push_result = subprocess.run(
+                ["git", "-C", repo_path, "push", "origin", branch_name],
+                capture_output=True,
+                text=True,
+                env=_git_env,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            return _escalate(
+                state,
+                "git push timed out after 120s — check network and remote credentials",
+                EscalationReason.GIT_PUSH_FAILED,
+            )
         if push_result.returncode != 0:
             return _escalate(
                 state,
