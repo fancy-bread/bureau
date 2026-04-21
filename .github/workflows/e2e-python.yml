@@ -23,6 +23,11 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Configure git identity
+        run: |
+          git config --global user.email "bureau-ci@github-actions"
+          git config --global user.name "Bureau CI"
+
       - name: Install bureau with dev dependencies
         run: pip install -e ".[dev]"
 
