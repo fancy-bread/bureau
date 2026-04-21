@@ -81,6 +81,7 @@ is mandatory. When editing extensions.yml, `optional: false` + `condition: null`
 - `~/.bureau/.env` (user-managed, never version-controlled) (004-e2e-test-suite)
 - Python 3.14 + `subprocess` (stdlib), `git` CLI (assumed present), `gh` CLI (existing) (005-builder-git-workflow)
 - LangGraph state (existing `SqliteSaver` checkpoint) (005-builder-git-workflow)
+- Python 3.14 + `pathlib` (stdlib), `re` (stdlib) — no new deps (006-tasks-md-driven)
 
 ## Recent Changes
 - 001-autonomous-runtime-core: Added Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic

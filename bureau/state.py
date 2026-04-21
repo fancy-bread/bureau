@@ -10,6 +10,7 @@ class Phase(StrEnum):
     REPO_ANALYSIS = "repo_analysis"
     MEMORY = "memory"
     PLANNER = "planner"
+    TASKS_LOADER = "tasks_loader"
     BUILDER = "builder"
     CRITIC = "critic"
     GIT_COMMIT = "git_commit"
@@ -41,6 +42,8 @@ class EscalationReason(StrEnum):
     DIRTY_REPO = "DIRTY_REPO"
     GIT_PUSH_FAILED = "GIT_PUSH_FAILED"
     GIT_BRANCH_EXISTS = "GIT_BRANCH_EXISTS"
+    TASKS_MISSING = "TASKS_MISSING"
+    TASKS_COMPLETE = "TASKS_COMPLETE"
 
 
 @dataclass
@@ -114,7 +117,10 @@ class RunState(dict):
     """LangGraph state for a bureau run. Extends dict for TypedDict compatibility."""
 
 
-def make_initial_state(run_id: str, spec_path: str, repo_path: str) -> dict[str, Any]:
+def make_initial_state(
+    run_id: str, spec_path: str, repo_path: str,
+    spec_folder: str = "", tasks_path: str = "",
+) -> dict[str, Any]:
     return {
         "run_id": run_id,
         "spec_path": spec_path,
@@ -134,4 +140,7 @@ def make_initial_state(run_id: str, spec_path: str, repo_path: str) -> dict[str,
         "critic_findings": [],
         "run_summary": None,
         "branch_name": "",
+        "spec_folder": spec_folder,
+        "tasks_path": tasks_path,
+        "plan_text": "",
     }

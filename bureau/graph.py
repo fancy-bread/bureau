@@ -13,9 +13,9 @@ from bureau.nodes.critic import critic_node
 from bureau.nodes.escalate import escalate_node
 from bureau.nodes.git_commit import git_commit_node
 from bureau.nodes.memory_node import memory_node
-from bureau.nodes.planner import planner_node
 from bureau.nodes.pr_create import pr_create_node
 from bureau.nodes.repo_analysis import repo_analysis_node
+from bureau.nodes.tasks_loader import tasks_loader_node
 from bureau.nodes.validate_spec import validate_spec_node
 
 
@@ -23,7 +23,7 @@ def _route_validate(state: dict[str, Any]) -> str:
     return state.get("_route", "ok")
 
 
-def _route_planner(state: dict[str, Any]) -> str:
+def _route_tasks_loader(state: dict[str, Any]) -> str:
     return state.get("_route", "ok")
 
 
@@ -44,7 +44,7 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     graph.add_node("validate_spec", validate_spec_node)
     graph.add_node("repo_analysis", repo_analysis_node)
     graph.add_node("memory", memory_node)
-    graph.add_node("planner", planner_node)
+    graph.add_node("tasks_loader", tasks_loader_node)
     graph.add_node("builder", builder_node)
     graph.add_node("critic", critic_node)
     graph.add_node("git_commit", git_commit_node)
@@ -63,10 +63,10 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
         _route_validate,
         {"ok": "memory", "escalate": "escalate"},
     )
-    graph.add_edge("memory", "planner")
+    graph.add_edge("memory", "tasks_loader")
     graph.add_conditional_edges(
-        "planner",
-        _route_planner,
+        "tasks_loader",
+        _route_tasks_loader,
         {"ok": "builder", "escalate": "escalate"},
     )
     graph.add_edge("builder", "critic")

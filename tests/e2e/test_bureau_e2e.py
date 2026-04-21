@@ -14,7 +14,7 @@ def _assert_phase_order(stdout: str) -> None:
     expected_phases = [
         "validate_spec",
         "repo_analysis",
-        "planner",
+        "tasks_loader",
         "git_commit",
         "pr_create",
     ]
