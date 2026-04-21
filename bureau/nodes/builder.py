@@ -35,7 +35,8 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     timeout = repo_context.command_timeout if repo_context else 300
 
     task_plan_dict = state.get("task_plan")
-    task_plan_text = _format_task_plan(task_plan_dict)
+    plan_text = state.get("plan_text", "")
+    task_plan_text = _format_task_plan(task_plan_dict, plan_text)
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -114,12 +115,15 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _format_task_plan(task_plan_dict: dict | None) -> str:
+def _format_task_plan(task_plan_dict: dict | None, plan_text: str = "") -> str:
     if not task_plan_dict:
         return "No task plan available."
     try:
         plan = TaskPlan.model_validate(task_plan_dict)
-        lines = [f"## Task Plan: {plan.spec_name}\n"]
+        lines = []
+        if plan_text:
+            lines.append(f"## Implementation Plan\n{plan_text}\n")
+        lines.append(f"## Task Plan: {plan.spec_name}\n")
         for task in plan.tasks:
             deps = f" (depends on: {', '.join(task.depends_on)})" if task.depends_on else ""
             frs = f" [{', '.join(task.fr_ids)}]"

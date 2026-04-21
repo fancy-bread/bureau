@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -7,6 +8,37 @@ from pathlib import Path
 import pytest
 
 SPEC_PATH = str(Path(__file__).parents[2] / "specs" / "001-autonomous-runtime-core" / "spec.md")
+
+_MINIMAL_SPEC = """\
+# Minimal Test Spec
+
+**Feature Branch**: `test-branch`
+**Status**: Draft
+
+## User Scenarios & Testing
+
+### User Story 1 - Basic feature (Priority: P1)
+
+A user does something useful.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user, **When** they act, **Then** it works.
+
+---
+
+## Requirements
+
+### Functional Requirements
+
+- **FR-001**: System MUST do the thing.
+
+## Success Criteria
+
+### Measurable Outcomes
+
+- **SC-001**: The thing is done.
+"""
 
 _BUREAU_CONFIG = """
 [runtime]
@@ -17,12 +49,38 @@ test_cmd    = "pytest"
 """
 
 
+_GIT_ENV = {
+    **os.environ,
+    "GIT_AUTHOR_NAME": "test",
+    "GIT_AUTHOR_EMAIL": "t@t.com",
+    "GIT_COMMITTER_NAME": "test",
+    "GIT_COMMITTER_EMAIL": "t@t.com",
+}
+
+
 @pytest.fixture()
 def target_repo(tmp_path: Path) -> Path:
     bureau_dir = tmp_path / ".bureau"
     bureau_dir.mkdir()
     (bureau_dir / "config.toml").write_text(_BUREAU_CONFIG)
     return tmp_path
+
+
+@pytest.fixture()
+def clean_git_repo(tmp_path: Path) -> Path:
+    """A clean git repo with .bureau/config.toml committed — passes the dirty-repo check."""
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    bureau_dir = repo_dir / ".bureau"
+    bureau_dir.mkdir()
+    (bureau_dir / "config.toml").write_text(_BUREAU_CONFIG)
+    subprocess.run(["git", "init"], cwd=repo_dir, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=repo_dir, capture_output=True, env=_GIT_ENV)
+    subprocess.run(
+        ["git", "commit", "-m", "init"],
+        cwd=repo_dir, capture_output=True, env=_GIT_ENV,
+    )
+    return repo_dir
 
 
 def _bureau_exe() -> str:
@@ -40,6 +98,43 @@ def _run_bureau(*args: str, api_key: str = "sk-ant-test-dummy") -> subprocess.Co
         cwd=Path(__file__).parents[2],
         env=env,
     )
+
+
+def test_tasks_missing_escalates(clean_git_repo: Path, tmp_path: Path) -> None:
+    spec_folder = tmp_path / "spec-folder"
+    spec_folder.mkdir()
+    (spec_folder / "spec.md").write_text(_MINIMAL_SPEC)
+    result = _run_bureau("run", str(spec_folder), "--repo", str(clean_git_repo))
+    assert "TASKS_MISSING" in result.stdout
+
+
+def test_tasks_complete_escalates(clean_git_repo: Path, tmp_path: Path) -> None:
+    spec_folder = tmp_path / "spec-folder"
+    spec_folder.mkdir()
+    (spec_folder / "spec.md").write_text(_MINIMAL_SPEC)
+    (spec_folder / "tasks.md").write_text("- [x] T001 Already done\n- [x] T002 Also done\n")
+    result = _run_bureau("run", str(spec_folder), "--repo", str(clean_git_repo))
+    assert "TASKS_COMPLETE" in result.stdout
+
+
+def test_file_path_invocation_resolves_tasks(clean_git_repo: Path, tmp_path: Path) -> None:
+    spec_folder = tmp_path / "spec-folder"
+    spec_folder.mkdir()
+    spec_file = spec_folder / "spec.md"
+    spec_file.write_text(_MINIMAL_SPEC)
+    (spec_folder / "tasks.md").write_text("- [ ] T001 A real task\n")
+    result = _run_bureau("run", str(spec_file), "--repo", str(clean_git_repo))
+    assert "TASKS_MISSING" not in result.stdout
+    assert "TASKS_COMPLETE" not in result.stdout
+
+
+def test_malformed_tasks_escalates(clean_git_repo: Path, tmp_path: Path) -> None:
+    spec_folder = tmp_path / "spec-folder"
+    spec_folder.mkdir()
+    (spec_folder / "spec.md").write_text(_MINIMAL_SPEC)
+    (spec_folder / "tasks.md").write_text("# Tasks\n\nJust prose, no checkboxes here.\n")
+    result = _run_bureau("run", str(spec_folder), "--repo", str(clean_git_repo))
+    assert "TASKS_MISSING" in result.stdout
 
 
 @pytest.mark.skip(reason="Stub-era E2E test; real persona nodes require Anthropic API + gh CLI")

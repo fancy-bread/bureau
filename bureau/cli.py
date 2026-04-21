@@ -43,26 +43,38 @@ def _check_api_key(ctx: typer.Context) -> None:
 
 @app.command()
 def run(
-    spec_file: str = typer.Argument(..., help="Path to spec.md"),
+    spec: str = typer.Argument(..., help="Path to spec folder or spec.md file"),
     repo: str = typer.Option(".", help="Path to target repository"),
     config: Optional[str] = typer.Option(None, help="Path to bureau.toml"),
 ) -> None:
-    """Execute the ASDLC workflow from a spec file."""
-    spec_path = str(Path(spec_file).resolve())
+    """Execute the ASDLC workflow from a spec folder or spec file."""
+    spec_arg = Path(spec).resolve()
+    if spec_arg.is_dir():
+        spec_folder = spec_arg
+        spec_path = spec_folder / "spec.md"
+        tasks_path = spec_folder / "tasks.md"
+    else:
+        spec_path = spec_arg
+        spec_folder = spec_path.parent
+        tasks_path = spec_folder / "tasks.md"
+
     repo_path = str(Path(repo).resolve())
 
-    if not Path(spec_path).exists():
+    if not spec_path.exists():
         typer.echo(f"Error: spec file not found: {spec_path}", err=True)
         raise typer.Exit(1)
 
     bureau_config = load_bureau_config(config)
-    record = create_run(spec_path, repo_path)
+    record = create_run(str(spec_path), repo_path)
     run_id = record.run_id
 
-    events.emit(events.RUN_STARTED, id=run_id, spec=spec_file, repo=repo)
+    events.emit(events.RUN_STARTED, id=run_id, spec=spec, repo=repo)
 
     compiled = build_graph(run_id, bureau_config)
-    initial_state = make_initial_state(run_id, spec_path, repo_path)
+    initial_state = make_initial_state(
+        run_id, str(spec_path), repo_path,
+        spec_folder=str(spec_folder), tasks_path=str(tasks_path),
+    )
     thread_config = {"configurable": {"thread_id": run_id}}
 
     import time
