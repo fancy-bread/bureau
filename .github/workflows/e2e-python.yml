@@ -17,6 +17,7 @@ jobs:
         with:
           repository: fancy-bread/bureau-test-python
           path: bureau-test-python
+          token: ${{ secrets.BUREAU_TEST_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -36,4 +37,4 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BUREAU_TEST_REPO_PYTHON: ${{ github.workspace }}/bureau-test-python
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BUREAU_TEST_PAT }}
