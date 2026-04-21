@@ -48,6 +48,14 @@ install_cmd = "pip install -e ."
 test_cmd    = "pytest"
 """
 
+_BUREAU_CONFIG_NO_INSTALL = """
+[runtime]
+language    = "python"
+base_image  = "python:3.12-slim"
+install_cmd = "true"
+test_cmd    = "pytest"
+"""
+
 
 _GIT_ENV = {
     **os.environ,
@@ -126,6 +134,37 @@ def test_file_path_invocation_resolves_tasks(clean_git_repo: Path, tmp_path: Pat
     result = _run_bureau("run", str(spec_file), "--repo", str(clean_git_repo))
     assert "TASKS_MISSING" not in result.stdout
     assert "TASKS_COMPLETE" not in result.stdout
+
+
+def test_tasks_loader_phase_fires_and_routes_to_builder(tmp_path: Path) -> None:
+    """tasks_loader must emit phase events and hand off to builder.
+
+    Uses no install_cmd so the builder reaches ralph.started before the dummy
+    API key causes an auth failure. This validates the tasks_loader → builder
+    handoff without requiring a real LLM call.
+    """
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    bureau_dir = repo_dir / ".bureau"
+    bureau_dir.mkdir()
+    (bureau_dir / "config.toml").write_text(_BUREAU_CONFIG_NO_INSTALL)
+    subprocess.run(["git", "init"], cwd=repo_dir, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=repo_dir, capture_output=True, env=_GIT_ENV)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo_dir, capture_output=True, env=_GIT_ENV)
+
+    spec_folder = tmp_path / "spec-folder"
+    spec_folder.mkdir()
+    spec_file = spec_folder / "spec.md"
+    spec_file.write_text(_MINIMAL_SPEC)
+    (spec_folder / "tasks.md").write_text("- [ ] T001 A real task\n- [ ] T002 Another task\n")
+
+    result = _run_bureau("run", str(spec_folder), "--repo", str(repo_dir))
+
+    assert "phase.started  phase=tasks_loader" in result.stdout
+    assert "phase.completed  phase=tasks_loader" in result.stdout
+    assert "tasks=2" in result.stdout
+    assert "ralph.started  phase=builder" in result.stdout
+    assert "phase=planner" not in result.stdout
 
 
 def test_malformed_tasks_escalates(clean_git_repo: Path, tmp_path: Path) -> None:
