@@ -8,12 +8,10 @@ Bureau is the autonomous runtime for [ASDLC](https://asdlc.io). You hand it an a
 [bureau] run.started  id=run-a3f9c2b1  spec=specs/002-auth/spec.md  repo=./
 [bureau] phase.started  phase=validate_spec
 [bureau] phase.completed  phase=validate_spec
-[bureau] phase.started  phase=planner
-[bureau] phase.completed  phase=planner  duration=38s
 [bureau] phase.started  phase=builder
 [bureau] phase.completed  phase=builder  duration=4m12s
-[bureau] phase.started  phase=critic
-[bureau] phase.completed  phase=critic  verdict=pass
+[bureau] phase.started  phase=reviewer
+[bureau] phase.completed  phase=reviewer  verdict=pass
 [bureau] run.completed  pr=https://github.com/org/repo/pull/42  duration=6m01s
 ```
 
@@ -27,9 +25,8 @@ Bureau runs a [LangGraph](https://github.com/langchain-ai/langgraph) pipeline of
 |-------|------|--------|
 | `validate_spec` | Guard | Confirms spec is complete and unambiguous before any work starts |
 | `repo_analysis` | Scout | Reads the target repo's `.bureau/config.toml` to understand the stack |
-| `planner` | Architect | Breaks the spec into a verified, dependency-ordered task plan |
-| `builder` | Engineer | Implements the plan, runs tests, iterates until the build passes |
-| `critic` | Reviewer | Audits the implementation against the spec and constitution; blocks or approves |
+| `builder` | Engineer | Implements the plan using skills middleware; runs tests, iterates until passing |
+| `reviewer` | Auditor | Scores the implementation across five axes against the spec and constitution |
 | `pr_create` | Closer | Opens the pull request with a structured run summary |
 
 If any phase cannot proceed, bureau emits a structured escalation and pauses. You provide the missing information and resume — no re-running from scratch.
@@ -42,7 +39,9 @@ If any phase cannot proceed, bureau emits a structured escalation and pauses. Yo
 - **[LangGraph](https://github.com/langchain-ai/langgraph) 0.2+** — state machine orchestration with per-node checkpointing
 - **SQLite** — run state persisted at `~/.bureau/runs/<run-id>/checkpoint.db`
 - **[Typer](https://typer.tiangolo.com)** — CLI
-- **[Anthropic API](https://docs.anthropic.com)** — Claude powers the planner, builder, and critic personas
+- **[Anthropic API](https://docs.anthropic.com)** — Claude powers the builder and reviewer personas
+- **[deepagents](https://github.com/deepagents/deepagents)** — skills middleware for the Builder; SKILL.md files from `bureau/skills/addyosmani/` are bundled in the package and loaded at Builder initialisation
+- **Vendored skills** — four ASDLC skills sourced from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) v0.5.0 (MIT); see `NOTICE`
 
 ---
 
@@ -61,7 +60,7 @@ brew install gh
 gh auth login
 ```
 
-**Anthropic API key** — required for persona execution (Planner, Builder, Critic)
+**Anthropic API key** — required for persona execution (Builder, Reviewer)
 
 **Local development** — store the key in `~/.bureau/.env` to keep bureau's Anthropic billing separate from Claude Code's Pro subscription:
 
@@ -212,11 +211,14 @@ Bureau will reject specs with `[NEEDS CLARIFICATION]` markers or missing P1 stor
 ## Development
 
 ```sh
-# Run tests
-pytest
+# Mirror CI (lint + unit + integration tests with 80% coverage gate)
+make ci
 
-# Lint
-ruff check .
+# Individual targets
+make lint        # ruff check
+make test        # pytest unit + integration
+make test-cov    # pytest with coverage report and 80% gate
+make test-e2e    # end-to-end tests (requires live API key)
 
 # Pre-commit hooks (one-time setup)
 pip install pre-commit
@@ -238,8 +240,7 @@ Bureau is in active development. The current release implements the CLI foundati
 | Run lifecycle (create / resume / abort) | ✅ |
 | `bureau init` | ✅ |
 | LangGraph pipeline with checkpointing | ✅ |
-| Planner persona | 🚧 stub |
-| Builder persona | 🚧 stub |
-| Critic persona | 🚧 stub |
-| PR creation | 🚧 stub |
+| Builder persona (deepagents + skills middleware) | ✅ |
+| Reviewer persona (five-axis quality framework) | ✅ |
+| PR creation | ✅ |
 

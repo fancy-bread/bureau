@@ -13,7 +13,7 @@ from bureau.personas.builder import run_builder_attempt
 from bureau.state import Escalation, EscalationReason, Phase
 from bureau.tools.shell_tools import execute_shell_tool
 
-_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "default"
+_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "addyosmani"
 
 
 def builder_node(state: dict[str, Any]) -> dict[str, Any]:

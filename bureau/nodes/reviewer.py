@@ -14,7 +14,7 @@ from bureau.models import BuildAttempt, RalphRound
 from bureau.personas.reviewer import run_reviewer
 from bureau.state import Escalation, EscalationReason, Phase
 
-_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "default"
+_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "addyosmani"
 
 
 def _load_review_skill(skills_root: Path) -> str:
@@ -35,7 +35,7 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
     if not any(review_dir.glob("*.md")):
         return _escalate(
             state,
-            "review skill missing from bureau/skills/default/review/",
+            "review skill missing from bureau/skills/addyosmani/review/",
             EscalationReason.BLOCKER,
         )
 

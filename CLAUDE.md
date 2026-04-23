@@ -84,9 +84,11 @@ is mandatory. When editing extensions.yml, `optional: false` + `condition: null`
 - LangGraph state (existing `SqliteSaver` checkpoint) (005-builder-git-workflow)
 - Python 3.14 + `pathlib` (stdlib), `re` (stdlib) — no new deps (006-tasks-md-driven)
 - Python 3.14 + `deepagents>=0.5.3` (new), `langchain-anthropic` (new transitive dep), `FilesystemMiddleware`, `SkillsMiddleware`, `MemoryMiddleware`, `SummarizationMiddleware` from deepagents (007-deepagents-verifier-skills)
-- SQLite per-run checkpoint via `SqliteSaver` (existing, unchanged); `bureau/skills/default/{build,test,ship,review}/SKILL.md` vendored skill files (007-deepagents-verifier-skills)
+- SQLite per-run checkpoint via `SqliteSaver` (existing, unchanged); `bureau/skills/addyosmani/{build,test,ship,review}/SKILL.md` vendored skill files (007-deepagents-verifier-skills)
 - Critic persona and node renamed to Reviewer throughout; `Phase.REVIEWER`, `ReviewerVerdict`, `ReviewerFinding`, `reviewer_model` in config (007-deepagents-verifier-skills)
+- Python 3.14 (no code changes) + None new — file replacement only (008-enrich-skills)
+- `bureau/skills/addyosmani/{build,test,ship,review}/SKILL.md` (tracked in git); skills sourced from addyosmani/agent-skills@0.5.0 with attribution frontmatter (008-enrich-skills)
 
 ## Recent Changes
-- 007-deepagents-verifier-skills: deepagents>=0.5.3 added; Builder replaced with `create_deep_agent` adapter + `_extract_build_attempt()` state bridge; Critic renamed to Reviewer throughout (Phase, models, nodes, personas, tests, constitution v1.2.0); ASDLC skills vendored to `bureau/skills/default/{build,test,ship,review}/`; Builder wired with build/test/ship skills + MemoryMiddleware; Reviewer wired with review skill pre-flight check
+- 007-deepagents-verifier-skills: deepagents>=0.5.3 added; Builder replaced with `create_deep_agent` adapter + `_extract_build_attempt()` state bridge; Critic renamed to Reviewer throughout (Phase, models, nodes, personas, tests, constitution v1.2.0); ASDLC skills vendored to `bureau/skills/addyosmani/{build,test,ship,review}/`; Builder wired with build/test/ship skills + MemoryMiddleware; Reviewer wired with review skill pre-flight check
 - 001-autonomous-runtime-core: Added Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic

@@ -86,7 +86,9 @@ def clean_git_repo(tmp_path: Path) -> Path:
     subprocess.run(["git", "add", "."], cwd=repo_dir, capture_output=True, env=_GIT_ENV)
     subprocess.run(
         ["git", "commit", "-m", "init"],
-        cwd=repo_dir, capture_output=True, env=_GIT_ENV,
+        cwd=repo_dir,
+        capture_output=True,
+        env=_GIT_ENV,
     )
     return repo_dir
 
@@ -176,19 +178,6 @@ def test_malformed_tasks_escalates(clean_git_repo: Path, tmp_path: Path) -> None
     assert "TASKS_MISSING" in result.stdout
 
 
-@pytest.mark.skip(reason="Stub-era E2E test; real persona nodes require Anthropic API + gh CLI")
-def test_e2e_stub_run_completes(target_repo: Path) -> None:
-    result = _run_bureau("run", SPEC_PATH, "--repo", str(target_repo))
-    assert result.returncode == 0, result.stderr
-    output = result.stdout
-    assert "run.started" in output
-    phases = ("validate_spec", "repo_analysis", "memory", "planner", "builder", "reviewer", "pr_create")
-    for phase in phases:
-        assert f"phase.started  phase={phase}" in output, f"Missing phase.started for {phase}"
-        assert f"phase.completed  phase={phase}" in output, f"Missing phase.completed for {phase}"
-    assert "run.completed" in output
-
-
 def test_spec_with_needs_clarification_is_rejected(target_repo: Path, tmp_path: Path) -> None:
     bad_spec = tmp_path / "spec.md"
     bad_spec.write_text(
@@ -235,24 +224,3 @@ def test_dirty_repo_escalates(tmp_path: Path) -> None:
 
     result = _run_bureau("run", SPEC_PATH, "--repo", str(tmp_path))
     assert "DIRTY_REPO" in result.stdout
-
-
-@pytest.mark.skip(reason="Depends on stub-era E2E full run completing; requires Anthropic API + gh CLI")
-def test_resume_completed_run_exits_with_error(target_repo: Path) -> None:
-    run_result = _run_bureau("run", SPEC_PATH, "--repo", str(target_repo))
-    assert run_result.returncode == 0, run_result.stderr
-
-    # Extract run ID from the run.started event line
-    run_id = None
-    for line in run_result.stdout.splitlines():
-        if "run.started" in line and "id=" in line:
-            for part in line.split():
-                if part.startswith("id="):
-                    run_id = part[3:]
-                    break
-    assert run_id is not None, f"Could not parse run_id from output: {run_result.stdout}"
-
-    result = _run_bureau("resume", run_id)
-    assert result.returncode == 1
-    combined = result.stdout.lower() + result.stderr.lower()
-    assert "not paused" in combined or "paused" in combined
