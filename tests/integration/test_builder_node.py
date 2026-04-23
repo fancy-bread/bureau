@@ -49,8 +49,18 @@ def _make_agent(exit_code: int = 0, files: list[str] | None = None) -> MagicMock
     return agent
 
 
+def _make_skills_root(tmp_path):
+    skills_root = tmp_path / "skills" / "default"
+    for name in ("build", "test", "ship"):
+        d = skills_root / name
+        d.mkdir(parents=True)
+        (d / "SKILL.md").write_text(f"---\nname: {name}\n---\n")
+    return skills_root
+
+
 def test_builder_node_appends_build_attempt_on_pass(tmp_path):
     (tmp_path / "spec.md").write_text("# Test\n")
+    skills_root = _make_skills_root(tmp_path)
 
     repo_context = RepoContext(
         language="python",
@@ -67,6 +77,7 @@ def test_builder_node_appends_build_attempt_on_pass(tmp_path):
     with (
         patch("bureau.personas.builder.create_deep_agent", return_value=_make_agent(exit_code=0)),
         patch("bureau.nodes.builder.Memory"),
+        patch("bureau.nodes.builder._SKILLS_ROOT", skills_root),
     ):
         result = builder_node(state)
 
@@ -80,6 +91,7 @@ def test_builder_node_appends_build_attempt_on_pass(tmp_path):
 
 def test_builder_node_escalates_after_max_attempts(tmp_path):
     (tmp_path / "spec.md").write_text("# Test\n")
+    skills_root = _make_skills_root(tmp_path)
 
     repo_context = RepoContext(
         language="python",
@@ -95,7 +107,10 @@ def test_builder_node_escalates_after_max_attempts(tmp_path):
 
     failing_agent = _make_agent(exit_code=1)
 
-    with patch("bureau.personas.builder.create_deep_agent", return_value=failing_agent):
+    with (
+        patch("bureau.personas.builder.create_deep_agent", return_value=failing_agent),
+        patch("bureau.nodes.builder._SKILLS_ROOT", skills_root),
+    ):
         result = builder_node(state)
 
     assert result["_route"] == "escalate"

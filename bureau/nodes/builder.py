@@ -13,6 +13,8 @@ from bureau.personas.builder import run_builder_attempt
 from bureau.state import Escalation, EscalationReason, Phase
 from bureau.tools.shell_tools import execute_shell_tool
 
+_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "default"
+
 
 def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     run_id = state["run_id"]
@@ -34,7 +36,7 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     plan_text = state.get("plan_text", "")
     task_plan_text = _format_task_plan(task_plan_dict, plan_text)
 
-    skills_root = Path(__file__).parent.parent / "skills" / "default"
+    skills_root = _SKILLS_ROOT
 
     # Run install_cmd once at round start
     if install_cmd:
