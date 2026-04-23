@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
-from bureau.models import CriticVerdict
-from bureau.personas.critic import run_critic
+from bureau.models import ReviewerVerdict
+from bureau.personas.reviewer import run_reviewer
 
 _PASS_VERDICT = {
     "verdict": "pass",
@@ -43,26 +43,10 @@ _REVISE_VERDICT = {
     "round": 0,
 }
 
-_CONSTITUTION_VIOLATION = {
-    "verdict": "escalate",
-    "findings": [
-        {
-            "type": "constitution",
-            "ref_id": "III. Verification Gates Are Real Gates",
-            "verdict": "violation",
-            "detail": "Builder skipped running tests.",
-            "remediation": "Tests must pass before advancing.",
-        }
-    ],
-    "summary": "Constitution violation detected.",
-    "round": 0,
-}
-
 
 def _make_client(response_json: dict) -> MagicMock:
     text_block = MagicMock()
     text_block.type = "text"
-    text_block.text = json.dumps(response_json)
     text_block.text = json.dumps(response_json)
 
     response = MagicMock()
@@ -73,10 +57,10 @@ def _make_client(response_json: dict) -> MagicMock:
     return client
 
 
-def test_run_critic_returns_pass_verdict(tmp_path):
+def test_run_reviewer_returns_pass_verdict(tmp_path):
     client = _make_client(_PASS_VERDICT)
 
-    result = run_critic(
+    result = run_reviewer(
         client=client,
         spec_text="- **FR-001**: Do X.",
         constitution="Constitution.",
@@ -85,17 +69,17 @@ def test_run_critic_returns_pass_verdict(tmp_path):
         model="claude-opus-4-7",
     )
 
-    assert isinstance(result, CriticVerdict)
+    assert isinstance(result, ReviewerVerdict)
     assert result.verdict == "pass"
     assert len(result.findings) == 1
     assert result.findings[0].verdict == "met"
     assert result.findings[0].ref_id == "FR-001"
 
 
-def test_run_critic_returns_revise_verdict(tmp_path):
+def test_run_reviewer_returns_revise_verdict(tmp_path):
     client = _make_client(_REVISE_VERDICT)
 
-    result = run_critic(
+    result = run_reviewer(
         client=client,
         spec_text="- **FR-001**: Do X.\n- **FR-002**: Do Y.",
         constitution="",
@@ -111,9 +95,8 @@ def test_run_critic_returns_revise_verdict(tmp_path):
     assert unmet[0].remediation != ""
 
 
-def test_run_critic_forces_escalate_on_constitution_violation():
+def test_run_reviewer_forces_escalate_on_constitution_violation():
     """Any 'violation' finding must force overall verdict to 'escalate'."""
-    # Model returns a verdict of "revise" but with a violation finding
     mixed = {
         "verdict": "revise",
         "findings": [
@@ -130,7 +113,7 @@ def test_run_critic_forces_escalate_on_constitution_violation():
     }
     client = _make_client(mixed)
 
-    result = run_critic(
+    result = run_reviewer(
         client=client,
         spec_text="",
         constitution="",
@@ -142,14 +125,14 @@ def test_run_critic_forces_escalate_on_constitution_violation():
     assert result.verdict == "escalate"
 
 
-def test_run_critic_passes_fr_lines_to_prompt():
-    """Critic extracts FR lines from spec_text for the prompt."""
+def test_run_reviewer_passes_fr_lines_to_prompt():
+    """Reviewer extracts FR lines from spec_text for the prompt."""
     spec_text = (
         "# My Feature\n\n## Requirements\n\n- **FR-001**: Do X.\n- **FR-002**: Do Y.\nSome other text.\n"
     )
 
     client = _make_client(_PASS_VERDICT)
-    run_critic(
+    run_reviewer(
         client=client,
         spec_text=spec_text,
         constitution="",

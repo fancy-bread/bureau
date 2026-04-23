@@ -14,6 +14,7 @@ dependencies = [
     "pydantic>=2",
     "anthropic>=0.25",
     "python-dotenv>=1.0",
+    "deepagents>=0.5.3",
 ]
 
 [project.scripts]
@@ -23,7 +24,7 @@ bureau = "bureau.cli:app"
 include = ["bureau*"]
 
 [tool.setuptools.package-data]
-bureau = ["data/*.md", "data/env.example"]
+bureau = ["data/*.md", "data/env.example", "skills/**/*.md"]
 
 [project.optional-dependencies]
 dev = [

@@ -61,5 +61,5 @@ def parse_repo_config(repo_path: str) -> RepoContext:
         command_timeout=cmd_timeout,
         planner_model=bureau_section.get("planner_model", "claude-opus-4-7"),
         builder_model=bureau_section.get("builder_model", "claude-sonnet-4-6"),
-        critic_model=bureau_section.get("critic_model", "claude-opus-4-7"),
+        reviewer_model=bureau_section.get("reviewer_model", "claude-opus-4-7"),
     )

@@ -1,6 +1,24 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.1.0 → 1.2.0
+Modified sections: Principle III (body text), Development Workflow (phase sequence), Agent Personas (table)
+Added: N/A
+Removed: N/A
+Rationale (PATCH): "Critic" renamed to "Reviewer" throughout to align with the pair-programmer
+  framing (Builder = coder, Reviewer = reviewer). No principle is changed or removed;
+  only terminology is updated. The Reviewer's behaviour (constitution checking, build review,
+  escalation logic) is unchanged.
+Templates reviewed:
+  - .specify/templates/plan-template.md ✅ No conflicts
+  - .specify/templates/spec-template.md ✅ No conflicts
+  - .specify/templates/tasks-template.md ✅ No conflicts
+Follow-up TODOs: None.
+
+---
+
+SYNC IMPACT REPORT
+==================
 Version change: 1.0.0 → 1.1.0
 Modified sections: Development Workflow (phase sequence), Agent Personas (table)
 Added: Tasks Loader persona entry
@@ -36,7 +54,7 @@ never hallucinate a best-effort answer to an unresolvable question.
 
 ### III. Verification Gates Are Real Gates
 
-A phase is not complete until its output is verified. Tests MUST pass. The Critic's
+A phase is not complete until its output is verified. Tests MUST pass. The Reviewer's
 verdict is the only verdict that counts. "Probably works" and "good enough" are not
 bureau states. Bureau MUST NOT advance to the next phase until the current phase
 output satisfies all verification requirements defined in the spec or constitution.
@@ -67,13 +85,13 @@ resumed. Resumability takes precedence over execution speed.
 Bureau executes runs as a sequenced phase pipeline. Phases MUST be honored in order;
 no phase may be skipped.
 
-**Phase sequence**: Tasks Loader → Builder → Critic → PR Creation
+**Phase sequence**: Tasks Loader → Builder → Reviewer → PR Creation
 
 - **Entry gate**: Approved spec at `specs/[###-feature-name]/spec.md` with `tasks.md` produced by the speckit pipeline
 - **Tasks Loader**: Reads tasks.md from spec folder; builds task list for Builder
 - **Builder**: Implements tasks per plan, commits incrementally
-- **Critic**: Reviews output against spec, constitution, and verification requirements
-- **PR Creation**: Only on Critic `verdict=pass`; run summary attached to PR
+- **Reviewer**: Reviews output against spec, constitution, and verification requirements
+- **PR Creation**: Only on Reviewer `verdict=pass`; run summary attached to PR
 
 Phases emit structured events to stdout:
 
@@ -97,9 +115,9 @@ pipeline and MUST NOT exceed its scope.
 |---------|-------|--------|
 | **Tasks Loader** | Reads tasks.md from spec folder; builds task list | Task list for Builder |
 | **Builder** | Executes tasks per plan; commits incrementally | Working code + commits |
-| **Critic** | Verifies output against spec, constitution, gates | `verdict=pass` or escalation |
+| **Reviewer** | Verifies output against spec, constitution, gates | `verdict=pass` or escalation |
 
-Personas share no state except through phase artifacts. The Critic's verdict is final —
+Personas share no state except through phase artifacts. The Reviewer's verdict is final —
 it cannot be overridden by the Planner or Builder.
 
 ## Governance
@@ -112,6 +130,6 @@ it cannot be overridden by the Planner or Builder.
 - PATCH bump: clarification, wording, or non-semantic refinement.
 - All PRs produced by bureau MUST include a constitution compliance section in the
   run summary. CRITICAL findings block PR creation.
-- Constitution compliance is reviewed on every Critic pass.
+- Constitution compliance is reviewed on every Reviewer pass.
 
-**Version**: 1.1.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-21
+**Version**: 1.2.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-21

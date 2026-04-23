@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-import anthropic
 
 from bureau import events
 from bureau.config import load_constitution
@@ -15,6 +12,8 @@ from bureau.models import BuildAttempt, TaskPlan
 from bureau.personas.builder import run_builder_attempt
 from bureau.state import Escalation, EscalationReason, Phase
 from bureau.tools.shell_tools import execute_shell_tool
+
+_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "default"
 
 
 def builder_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -29,7 +28,6 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
 
     max_attempts = repo_context.max_builder_attempts if repo_context else 3
     test_cmd = repo_context.test_cmd if repo_context else "pytest"
-    build_cmd = repo_context.build_cmd if repo_context else ""
     install_cmd = repo_context.install_cmd if repo_context else ""
     model = repo_context.builder_model if repo_context else "claude-sonnet-4-6"
     timeout = repo_context.command_timeout if repo_context else 300
@@ -38,7 +36,7 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     plan_text = state.get("plan_text", "")
     task_plan_text = _format_task_plan(task_plan_dict, plan_text)
 
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    skills_root = _SKILLS_ROOT
 
     # Run install_cmd once at round start
     if install_cmd:
@@ -58,20 +56,23 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
 
     passed = False
     for attempt_num in range(max_attempts):
-        attempt = run_builder_attempt(
-            client=client,
-            spec_text=spec_text,
-            task_plan_text=task_plan_text,
-            constitution=constitution,
-            test_cmd=test_cmd,
-            build_cmd=build_cmd,
-            repo_path=repo_path,
-            model=model,
-            ralph_round=ralph_round,
-            attempt_num=attempt_num,
-            previous_attempts=round_attempts,
-            timeout=timeout,
-        )
+        try:
+            attempt = run_builder_attempt(
+                spec_text=spec_text,
+                task_plan_text=task_plan_text,
+                constitution=constitution,
+                test_cmd=test_cmd,
+                repo_path=repo_path,
+                model=model,
+                ralph_round=ralph_round,
+                attempt_num=attempt_num,
+                previous_attempts=round_attempts,
+                skills_root=skills_root,
+                plan_text=plan_text,
+                timeout=timeout,
+            )
+        except ValueError as exc:
+            return _escalate(state, str(exc), EscalationReason.BLOCKER)
         round_attempts.append(attempt)
         existing_attempts.append(attempt.model_dump())
 
@@ -111,7 +112,7 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
         **state,
         "build_attempts": existing_attempts,
         "builder_attempts": len(round_attempts),
-        "phase": Phase.CRITIC,
+        "phase": Phase.REVIEWER,
     }
 
 

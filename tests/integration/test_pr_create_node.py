@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from bureau.nodes.pr_create import pr_create_node
 from bureau.state import EscalationReason, Phase, RepoContext, make_initial_state
 
-_CRITIC_FINDINGS = [
+_REVIEWER_FINDINGS = [
     {
         "type": "requirement",
         "ref_id": "FR-001",
@@ -26,8 +26,8 @@ _RALPH_ROUNDS = [
     {
         "round": 0,
         "build_attempts": [],
-        "critic_verdict": "pass",
-        "critic_findings": _CRITIC_FINDINGS,
+        "reviewer_verdict": "pass",
+        "reviewer_findings": _REVIEWER_FINDINGS,
         "completed_at": "2026-04-18T00:00:00+00:00",
     }
 ]
@@ -49,7 +49,7 @@ def _base_state(tmp_path) -> dict:
         language="python", base_image="python:3.14-slim", install_cmd="", test_cmd="pytest"
     )
     state["ralph_rounds"] = _RALPH_ROUNDS
-    state["critic_findings"] = _CRITIC_FINDINGS
+    state["reviewer_findings"] = _REVIEWER_FINDINGS
     return state
 
 

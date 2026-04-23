@@ -126,7 +126,7 @@ class TestPrFailedEscalationIntact:
             branch_name="feat/smoke-hello-world-deaaf184",
             run_summary=None,
             ralph_rounds=[],
-            critic_findings=[],
+            reviewer_findings=[],
         )
         with patch("bureau.nodes.pr_create.subprocess.run", side_effect=mock_run):
             out = pr_create_node(state)
