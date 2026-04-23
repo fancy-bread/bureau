@@ -23,4 +23,4 @@ jobs:
         run: ruff check .
 
       - name: Test
-        run: pytest
+        run: pytest tests/unit tests/integration --cov=bureau --cov-report=term-missing --cov-fail-under=80

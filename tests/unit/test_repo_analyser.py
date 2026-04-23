@@ -43,6 +43,42 @@ def test_missing_required_field_raises(tmp_path):
         parse_repo_config(str(tmp_path))
 
 
+def _write_config(tmp_path, extra: str) -> None:
+    bureau_dir = tmp_path / ".bureau"
+    bureau_dir.mkdir(exist_ok=True)
+    (bureau_dir / "config.toml").write_text(
+        "[runtime]\n"
+        'language = "python"\nbase_image = "python:3.14-slim"\n'
+        'install_cmd = "pip install -e ."\ntest_cmd = "pytest"\n' + extra
+    )
+
+
+def test_invalid_toml_raises(tmp_path):
+    bureau_dir = tmp_path / ".bureau"
+    bureau_dir.mkdir()
+    (bureau_dir / "config.toml").write_text("[[not valid toml\n")
+    with pytest.raises(ConfigInvalidError, match="Failed to parse"):
+        parse_repo_config(str(tmp_path))
+
+
+def test_max_builder_attempts_zero_raises(tmp_path):
+    _write_config(tmp_path, "[ralph_loop]\nmax_builder_attempts = 0\n")
+    with pytest.raises(ConfigInvalidError, match="max_builder_attempts"):
+        parse_repo_config(str(tmp_path))
+
+
+def test_max_rounds_zero_raises(tmp_path):
+    _write_config(tmp_path, "[ralph_loop]\nmax_rounds = 0\n")
+    with pytest.raises(ConfigInvalidError, match="max_rounds"):
+        parse_repo_config(str(tmp_path))
+
+
+def test_command_timeout_zero_raises(tmp_path):
+    _write_config(tmp_path, "[ralph_loop]\ncommand_timeout = 0\n")
+    with pytest.raises(ConfigInvalidError, match="command_timeout"):
+        parse_repo_config(str(tmp_path))
+
+
 def test_optional_fields_default_to_empty(tmp_path):
     bureau_dir = tmp_path / ".bureau"
     bureau_dir.mkdir()

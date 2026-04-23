@@ -10,6 +10,10 @@ The developer's job ends at spec approval and resumes at PR review. Everything i
 Bureau has no compiled source code — it is a Claude Code skill framework and runtime configuration.
 The "code" is the skills, templates, hooks, and constitution that govern how bureau runs.
 
+## Before Committing
+
+Run `make ci` to mirror the CI pipeline (lint + unit/integration tests) before every commit.
+
 ## Workflow
 
 Bureau uses Spec Kit skills invoked as slash commands. The phase sequence is:
