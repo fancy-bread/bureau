@@ -26,7 +26,6 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
 
     max_attempts = repo_context.max_builder_attempts if repo_context else 3
     test_cmd = repo_context.test_cmd if repo_context else "pytest"
-    build_cmd = repo_context.build_cmd if repo_context else ""
     install_cmd = repo_context.install_cmd if repo_context else ""
     model = repo_context.builder_model if repo_context else "claude-sonnet-4-6"
     timeout = repo_context.command_timeout if repo_context else 300

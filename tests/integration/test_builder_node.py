@@ -38,7 +38,9 @@ def _make_agent(exit_code: int = 0, files: list[str] | None = None) -> MagicMock
         )
     messages.append(
         ToolMessage(
-            content=json.dumps({"exit_code": exit_code, "stdout": "1 passed" if exit_code == 0 else "", "stderr": ""}),
+            content=json.dumps(
+                {"exit_code": exit_code, "stdout": "1 passed" if exit_code == 0 else "", "stderr": ""}
+            ),
             tool_call_id="tc2",
         )
     )

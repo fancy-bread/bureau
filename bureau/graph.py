@@ -9,12 +9,12 @@ from langgraph.graph import END, StateGraph
 
 from bureau.config import BureauConfig
 from bureau.nodes.builder import builder_node
-from bureau.nodes.reviewer import reviewer_node
 from bureau.nodes.escalate import escalate_node
 from bureau.nodes.git_commit import git_commit_node
 from bureau.nodes.memory_node import memory_node
 from bureau.nodes.pr_create import pr_create_node
 from bureau.nodes.repo_analysis import repo_analysis_node
+from bureau.nodes.reviewer import reviewer_node
 from bureau.nodes.tasks_loader import tasks_loader_node
 from bureau.nodes.validate_spec import validate_spec_node
 

@@ -20,7 +20,9 @@ def _ai_write_file(path: str, tool_call_id: str = "tc1") -> AIMessage:
     )
 
 
-def _tool_run_command(exit_code: int, stdout: str, stderr: str = "", tool_call_id: str = "tc2") -> ToolMessage:
+def _tool_run_command(
+    exit_code: int, stdout: str, stderr: str = "", tool_call_id: str = "tc2"
+) -> ToolMessage:
     return ToolMessage(
         content=json.dumps({"exit_code": exit_code, "stdout": stdout, "stderr": stderr}),
         tool_call_id=tool_call_id,
@@ -131,7 +133,7 @@ def test_run_builder_attempt_retry_passes_previous_output(tmp_path):
     agent_state = _make_agent_state([_tool_run_command(0, "1 passed", tool_call_id="tc1")])
     fake_agent = _fake_agent(agent_state)
 
-    with patch("bureau.personas.builder.create_deep_agent", return_value=fake_agent) as mock_create:
+    with patch("bureau.personas.builder.create_deep_agent", return_value=fake_agent):
         run_builder_attempt(
             spec_text="# Test",
             task_plan_text="",
