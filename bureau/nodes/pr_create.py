@@ -7,7 +7,7 @@ from typing import Any
 
 from bureau import events
 from bureau.memory import Memory
-from bureau.models import CriticFinding, RunSummary
+from bureau.models import ReviewerFinding, RunSummary
 from bureau.run_manager import get_run
 from bureau.state import Escalation, EscalationReason, Phase
 
@@ -23,15 +23,15 @@ def pr_create_node(state: dict[str, Any]) -> dict[str, Any]:
         branch = state.get("branch_name") or (spec.branch if spec else f"feat/unknown-{run_id[:8]}")
 
         ralph_rounds_dicts = state.get("ralph_rounds", [])
-        critic_findings_dicts = state.get("critic_findings", [])
-        critic_findings = [CriticFinding.model_validate(f) for f in critic_findings_dicts]
+        reviewer_findings_dicts = state.get("reviewer_findings", [])
+        reviewer_findings = [ReviewerFinding.model_validate(f) for f in reviewer_findings_dicts]
 
         frs_addressed = sorted(
-            {f.ref_id for f in critic_findings if f.type == "requirement" and f.verdict == "met"}
+            {f.ref_id for f in reviewer_findings if f.type == "requirement" and f.verdict == "met"}
         )
 
-        critic_verdict = (
-            ralph_rounds_dicts[-1].get("critic_verdict", "pass") if ralph_rounds_dicts else "pass"
+        reviewer_verdict = (
+            ralph_rounds_dicts[-1].get("reviewer_verdict", "pass") if ralph_rounds_dicts else "pass"
         )
 
         duration = _calc_duration(run_id)
@@ -44,8 +44,8 @@ def pr_create_node(state: dict[str, Any]) -> dict[str, Any]:
             branch=branch,
             ralph_rounds=len(ralph_rounds_dicts),
             frs_addressed=frs_addressed,
-            critic_verdict=critic_verdict,
-            critic_findings=critic_findings,
+            reviewer_verdict=reviewer_verdict,
+            reviewer_findings=reviewer_findings,
             pr_url="",
             duration_seconds=duration,
             completed_at=completed_at,
@@ -106,7 +106,7 @@ def _render_pr_body(summary: RunSummary) -> str:
         f"| Feature | {summary.spec_name} |",
         f"| Spec | `{summary.spec_path}` |",
         f"| Branch | `{summary.branch}` |",
-        f"| Critic Verdict | `{summary.critic_verdict}` |",
+        f"| Reviewer Verdict | `{summary.reviewer_verdict}` |",
         f"| Ralph Loop Rounds | {summary.ralph_rounds} |",
         f"| Duration | {summary.duration_seconds:.1f}s |",
         f"| Completed | {summary.completed_at} |",
@@ -120,10 +120,10 @@ def _render_pr_body(summary: RunSummary) -> str:
     else:
         lines.append("_(none recorded)_")
 
-    lines += ["", "## Critic Findings", ""]
+    lines += ["", "## Reviewer Findings", ""]
 
-    if summary.critic_findings:
-        for f in summary.critic_findings:
+    if summary.reviewer_findings:
+        for f in summary.reviewer_findings:
             icon = "✅" if f.verdict == "met" else ("🚨" if f.verdict == "violation" else "⚠️")
             lines.append(f"- {icon} **{f.ref_id}** ({f.type}): {f.detail}")
     else:

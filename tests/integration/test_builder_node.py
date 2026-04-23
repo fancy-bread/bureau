@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
+from langchain_core.messages import AIMessage, ToolMessage
+
 from bureau.nodes.builder import builder_node
 from bureau.state import EscalationReason, RepoContext, make_initial_state
 
@@ -24,29 +26,25 @@ _TASK_PLAN = {
 }
 
 
-def _make_mock_client(exit_code: int = 0) -> MagicMock:
-    """Mock Builder persona that returns a run_command call then stops."""
-    run_cmd = MagicMock()
-    run_cmd.type = "tool_use"
-    run_cmd.name = "run_command"
-    run_cmd.id = "tool_1"
-    run_cmd.input = {"command": "pytest"}
-
-    tool_response = MagicMock()
-    tool_response.content = [run_cmd]
-    tool_response.stop_reason = "tool_use"
-
-    final_block = MagicMock()
-    final_block.type = "text"
-    final_block.text = "Implementation complete."
-
-    final_response = MagicMock()
-    final_response.content = [final_block]
-    final_response.stop_reason = "end_turn"
-
-    client = MagicMock()
-    client.messages.create.side_effect = [tool_response, final_response]
-    return client
+def _make_agent(exit_code: int = 0, files: list[str] | None = None) -> MagicMock:
+    files = files or []
+    messages = []
+    for path in files:
+        messages.append(
+            AIMessage(
+                content="",
+                tool_calls=[{"id": "tc1", "name": "write_file", "args": {"path": path, "content": "x"}}],
+            )
+        )
+    messages.append(
+        ToolMessage(
+            content=json.dumps({"exit_code": exit_code, "stdout": "1 passed" if exit_code == 0 else "", "stderr": ""}),
+            tool_call_id="tc2",
+        )
+    )
+    agent = MagicMock()
+    agent.invoke.return_value = {"messages": messages}
+    return agent
 
 
 def test_builder_node_appends_build_attempt_on_pass(tmp_path):
@@ -64,11 +62,9 @@ def test_builder_node_appends_build_attempt_on_pass(tmp_path):
     state["spec_text"] = "# Test\n"
     state["task_plan"] = _TASK_PLAN
 
-    shell_result = json.dumps({"stdout": "1 passed", "stderr": "", "exit_code": 0})
-
     with (
-        patch("bureau.nodes.builder.anthropic.Anthropic", return_value=_make_mock_client()),
-        patch("bureau.personas.builder.execute_shell_tool", return_value=shell_result),
+        patch("bureau.personas.builder.create_deep_agent", return_value=_make_agent(exit_code=0)),
+        patch("bureau.nodes.builder.Memory"),
     ):
         result = builder_node(state)
 
@@ -95,36 +91,9 @@ def test_builder_node_escalates_after_max_attempts(tmp_path):
     state["spec_text"] = "# Test\n"
     state["task_plan"] = _TASK_PLAN
 
-    # Client needs responses for 2 attempts × 2 calls each (tool + final)
-    def make_attempt_client():
-        run_cmd = MagicMock()
-        run_cmd.type = "tool_use"
-        run_cmd.name = "run_command"
-        run_cmd.id = "tool_x"
-        run_cmd.input = {"command": "pytest"}
+    failing_agent = _make_agent(exit_code=1)
 
-        tool_resp = MagicMock()
-        tool_resp.content = [run_cmd]
-        tool_resp.stop_reason = "tool_use"
-
-        final_block = MagicMock()
-        final_block.type = "text"
-        final_block.text = "done"
-        final_resp = MagicMock()
-        final_resp.content = [final_block]
-        final_resp.stop_reason = "end_turn"
-
-        return [tool_resp, final_resp]
-
-    client = MagicMock()
-    client.messages.create.side_effect = make_attempt_client() + make_attempt_client()
-
-    shell_result = json.dumps({"stdout": "", "stderr": "FAILED", "exit_code": 1})
-
-    with (
-        patch("bureau.nodes.builder.anthropic.Anthropic", return_value=client),
-        patch("bureau.personas.builder.execute_shell_tool", return_value=shell_result),
-    ):
+    with patch("bureau.personas.builder.create_deep_agent", return_value=failing_agent):
         result = builder_node(state)
 
     assert result["_route"] == "escalate"

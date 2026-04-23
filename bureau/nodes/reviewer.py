@@ -11,20 +11,39 @@ from bureau import events
 from bureau.config import load_constitution
 from bureau.memory import Memory
 from bureau.models import BuildAttempt, RalphRound
-from bureau.personas.critic import run_critic
+from bureau.personas.reviewer import run_reviewer
 from bureau.state import Escalation, EscalationReason, Phase
 
+_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "default"
 
-def critic_node(state: dict[str, Any]) -> dict[str, Any]:
+
+def _load_review_skill(skills_root: Path) -> str:
+    review_dir = skills_root / "review"
+    md_files = sorted(review_dir.glob("*.md"))
+    return "\n\n".join(f.read_text(encoding="utf-8") for f in md_files)
+
+
+def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
     run_id = state["run_id"]
     spec_path = state["spec_path"]
     repo_path = state["repo_path"]
     repo_context = state.get("repo_context")
     ralph_round = state.get("ralph_round", 0)
 
+    # Pre-flight: review skill must be present
+    review_dir = _SKILLS_ROOT / "review"
+    if not any(review_dir.glob("*.md")):
+        return _escalate(
+            state,
+            "review skill missing from bureau/skills/default/review/",
+            EscalationReason.BLOCKER,
+        )
+
+    review_skill = _load_review_skill(_SKILLS_ROOT)
+
     spec_text = state.get("spec_text") or Path(spec_path).read_text(encoding="utf-8")
     constitution = load_constitution(repo_path, repo_context)
-    model = repo_context.critic_model if repo_context else "claude-opus-4-7"
+    model = repo_context.reviewer_model if repo_context else "claude-opus-4-7"
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -36,10 +55,10 @@ def critic_node(state: dict[str, Any]) -> dict[str, Any]:
         builder_summary = "No builder summary available."
 
     try:
-        verdict = run_critic(
+        verdict = run_reviewer(
             client=client,
             spec_text=spec_text,
-            constitution=constitution,
+            constitution=review_skill + "\n\n" + constitution if review_skill else constitution,
             builder_summary=builder_summary,
             ralph_round=ralph_round,
             model=model,
@@ -47,7 +66,7 @@ def critic_node(state: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         return _escalate(
             state,
-            f"Critic failed to produce a verdict: {exc}",
+            f"Reviewer failed to produce a verdict: {exc}",
             EscalationReason.BLOCKER,
         )
 
@@ -59,24 +78,24 @@ def critic_node(state: dict[str, Any]) -> dict[str, Any]:
     ralph_round_record = RalphRound(
         round=ralph_round,
         build_attempts=round_attempts,
-        critic_verdict=verdict.verdict,
-        critic_findings=verdict.findings,
+        reviewer_verdict=verdict.verdict,
+        reviewer_findings=verdict.findings,
         completed_at=datetime.now(timezone.utc).isoformat(),
     )
 
     existing_ralph_rounds = list(state.get("ralph_rounds", []))
     existing_ralph_rounds.append(ralph_round_record.model_dump())
 
-    mem.write("critic_findings", [f.model_dump() for f in verdict.findings])
+    mem.write("reviewer_findings", [f.model_dump() for f in verdict.findings])
 
     updated_state = {
         **state,
         "ralph_rounds": existing_ralph_rounds,
-        "critic_findings": [f.model_dump() for f in verdict.findings],
+        "reviewer_findings": [f.model_dump() for f in verdict.findings],
     }
 
     if verdict.verdict == "pass":
-        events.emit(events.PHASE_COMPLETED, phase=Phase.CRITIC, verdict="pass")
+        events.emit(events.PHASE_COMPLETED, phase=Phase.REVIEWER, verdict="pass")
         events.emit(events.RALPH_COMPLETED, rounds=ralph_round + 1, verdict="pass")
         return {**updated_state, "phase": Phase.PR_CREATE, "_route": "pass"}
 
@@ -85,7 +104,7 @@ def critic_node(state: dict[str, Any]) -> dict[str, Any]:
         detail = violations[0].detail if violations else verdict.summary
         return _escalate(
             updated_state,
-            f"Critic detected a constitution violation: {detail}",
+            f"Reviewer detected a constitution violation: {detail}",
             EscalationReason.CONSTITUTION_VIOLATION,
         )
 
@@ -99,7 +118,7 @@ def critic_node(state: dict[str, Any]) -> dict[str, Any]:
             EscalationReason.RALPH_ROUNDS_EXCEEDED,
         )
 
-    events.emit(events.PHASE_COMPLETED, phase=Phase.CRITIC, verdict="revise", round=ralph_round)
+    events.emit(events.PHASE_COMPLETED, phase=Phase.REVIEWER, verdict="revise", round=ralph_round)
 
     return {
         **updated_state,
@@ -129,7 +148,7 @@ def _escalate(state: dict[str, Any], reason: str, escalation_reason: EscalationR
     )
     escalation = Escalation(
         run_id=state["run_id"],
-        phase=Phase.CRITIC,
+        phase=Phase.REVIEWER,
         reason=escalation_reason,
         what_happened=reason,
         what_is_needed=what_needed,

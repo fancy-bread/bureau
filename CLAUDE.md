@@ -45,7 +45,7 @@ Bureau is metadata-driven. There is no runtime process to start or binary to bui
 - `speckit-plan/`, `speckit-implement/`, `speckit-specify/`, etc.
 - `speckit-git-*/` — Git workflow skills (initialize, feature branch, commit, validate, remote)
 
-**`VISION.md`** — Bureau's point of view: taste, voice, decision heuristics, and persona boundary definitions (Planner / Builder / Critic).
+**`VISION.md`** — Bureau's point of view: taste, voice, decision heuristics, and persona boundary definitions (Planner / Builder / Reviewer).
 
 ## Constitution
 
@@ -73,15 +73,16 @@ Most hooks are optional git auto-commits. The `before_constitution` hook (git in
 is mandatory. When editing extensions.yml, `optional: false` + `condition: null` = always runs.
 
 ## Active Technologies
-- Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic (001-autonomous-runtime-core)
-- SQLite per run via `SqliteSaver` (`~/.bureau/runs/<run-id>/checkpoint.db`); Memory store as JSON file (`~/.bureau/runs/<run-id>/memory.json`) (001-autonomous-runtime-core)
-- Python 3.14 + langgraph 0.2+, langgraph-checkpoint-sqlite, anthropic>=0.25, typer>=0.12, pydantic>=2 (all existing) (002-personas-pr-creation)
-- SQLite per-run checkpoint (existing); memory.json per-run scratchpad (existing — extended for task plan and build attempt history) (002-personas-pr-creation)
-- Python 3.12+ + `python-dotenv>=1.0` (new runtime), `pytest-timeout>=2.3` (new dev dep), `subprocess` + `os` (stdlib), `gh` CLI (external, pre-installed on ubuntu-latest) (004-e2e-test-suite)
-- `~/.bureau/.env` (user-managed, never version-controlled) (004-e2e-test-suite)
-- Python 3.14 + `subprocess` (stdlib), `git` CLI (assumed present), `gh` CLI (existing) (005-builder-git-workflow)
+- Python 3.14 + langgraph 0.2+, langgraph-checkpoint-sqlite, anthropic>=0.25, typer>=0.12, pydantic>=2, python-dotenv>=1.0
+- SQLite per-run checkpoint via `SqliteSaver` (`~/.bureau/runs/<run-id>/checkpoint.db`); memory.json per-run scratchpad
+- `pytest-timeout>=2.3` (dev dep); `gh` CLI (external); `git` CLI (assumed present)
+- `~/.bureau/.env` (user-managed, never version-controlled)
 - LangGraph state (existing `SqliteSaver` checkpoint) (005-builder-git-workflow)
 - Python 3.14 + `pathlib` (stdlib), `re` (stdlib) — no new deps (006-tasks-md-driven)
+- Python 3.14 + `deepagents>=0.5.3` (new), `langchain-anthropic` (new transitive dep), `FilesystemMiddleware`, `SkillsMiddleware`, `MemoryMiddleware`, `SummarizationMiddleware` from deepagents (007-deepagents-verifier-skills)
+- SQLite per-run checkpoint via `SqliteSaver` (existing, unchanged); `bureau/skills/default/{build,test,ship,review}/SKILL.md` vendored skill files (007-deepagents-verifier-skills)
+- Critic persona and node renamed to Reviewer throughout; `Phase.REVIEWER`, `ReviewerVerdict`, `ReviewerFinding`, `reviewer_model` in config (007-deepagents-verifier-skills)
 
 ## Recent Changes
+- 007-deepagents-verifier-skills: deepagents>=0.5.3 added; Builder replaced with `create_deep_agent` adapter + `_extract_build_attempt()` state bridge; Critic renamed to Reviewer throughout (Phase, models, nodes, personas, tests, constitution v1.2.0); ASDLC skills vendored to `bureau/skills/default/{build,test,ship,review}/`; Builder wired with build/test/ship skills + MemoryMiddleware; Reviewer wired with review skill pre-flight check
 - 001-autonomous-runtime-core: Added Python 3.12 + langgraph 0.2+, langgraph-checkpoint-sqlite, typer, tomllib (stdlib), pydantic

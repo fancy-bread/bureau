@@ -30,7 +30,7 @@ class BuildAttempt(BaseModel):
     timestamp: str
 
 
-class CriticFinding(BaseModel):
+class ReviewerFinding(BaseModel):
     type: str
     ref_id: str
     verdict: str
@@ -38,9 +38,9 @@ class CriticFinding(BaseModel):
     remediation: str = ""
 
 
-class CriticVerdict(BaseModel):
+class ReviewerVerdict(BaseModel):
     verdict: str
-    findings: list[CriticFinding]
+    findings: list[ReviewerFinding]
     summary: str
     round: int
 
@@ -48,8 +48,8 @@ class CriticVerdict(BaseModel):
 class RalphRound(BaseModel):
     round: int
     build_attempts: list[BuildAttempt]
-    critic_verdict: str
-    critic_findings: list[CriticFinding]
+    reviewer_verdict: str
+    reviewer_findings: list[ReviewerFinding]
     completed_at: str
 
 
@@ -60,8 +60,8 @@ class RunSummary(BaseModel):
     branch: str
     ralph_rounds: int
     frs_addressed: list[str]
-    critic_verdict: str
-    critic_findings: list[CriticFinding]
+    reviewer_verdict: str
+    reviewer_findings: list[ReviewerFinding]
     pr_url: str
     duration_seconds: float
     completed_at: str

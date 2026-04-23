@@ -12,7 +12,7 @@ class Phase(StrEnum):
     PLANNER = "planner"
     TASKS_LOADER = "tasks_loader"
     BUILDER = "builder"
-    CRITIC = "critic"
+    REVIEWER = "reviewer"
     GIT_COMMIT = "git_commit"
     PR_CREATE = "pr_create"
     ESCALATE = "escalate"
@@ -87,7 +87,7 @@ class RepoContext:
     command_timeout: int = 300
     planner_model: str = "claude-opus-4-7"
     builder_model: str = "claude-sonnet-4-6"
-    critic_model: str = "claude-opus-4-7"
+    reviewer_model: str = "claude-opus-4-7"
 
 
 @dataclass
@@ -137,7 +137,7 @@ def make_initial_state(
         "builder_attempts": 0,
         "build_attempts": [],
         "ralph_rounds": [],
-        "critic_findings": [],
+        "reviewer_findings": [],
         "run_summary": None,
         "branch_name": "",
         "spec_folder": spec_folder,

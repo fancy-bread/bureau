@@ -6,13 +6,13 @@ from typing import Any
 
 import anthropic
 
-from bureau.models import CriticVerdict
+from bureau.models import ReviewerVerdict
 
 _SYSTEM_TEMPLATE = """\
-You are Bureau's Critic persona. Audit the Builder's implementation against the spec's \
-functional requirements and the bureau constitution.
+You are Bureau's Reviewer persona. Audit the Builder's implementation against the spec's \
+functional requirements and the Spec Kit constitution.
 
-## Bureau Constitution
+## Spec Kit Constitution
 {constitution}
 
 ## Spec Functional Requirements
@@ -50,14 +50,14 @@ _JSON_PATTERN = re.compile(r"\{.*\}", re.DOTALL)
 _FR_LINE = re.compile(r"- \*\*FR-\d{3}\*\*:")
 
 
-def run_critic(
+def run_reviewer(
     client: anthropic.Anthropic,
     spec_text: str,
     constitution: str,
     builder_summary: str,
     ralph_round: int,
     model: str,
-) -> CriticVerdict:
+) -> ReviewerVerdict:
     fr_lines = [line.strip() for line in spec_text.splitlines() if _FR_LINE.match(line.strip())]
     fr_list = "\n".join(fr_lines) if fr_lines else spec_text
 
@@ -92,10 +92,10 @@ def run_critic(
     m = _JSON_PATTERN.search(final_text)
     json_text = m.group(0) if m else final_text.strip()
 
-    verdict = CriticVerdict.model_validate(json.loads(json_text))
+    verdict = ReviewerVerdict.model_validate(json.loads(json_text))
 
     if any(f.verdict == "violation" for f in verdict.findings):
-        return CriticVerdict(
+        return ReviewerVerdict(
             verdict="escalate",
             findings=verdict.findings,
             summary=verdict.summary,

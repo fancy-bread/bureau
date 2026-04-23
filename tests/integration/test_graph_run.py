@@ -182,7 +182,7 @@ def test_e2e_stub_run_completes(target_repo: Path) -> None:
     assert result.returncode == 0, result.stderr
     output = result.stdout
     assert "run.started" in output
-    phases = ("validate_spec", "repo_analysis", "memory", "planner", "builder", "critic", "pr_create")
+    phases = ("validate_spec", "repo_analysis", "memory", "planner", "builder", "reviewer", "pr_create")
     for phase in phases:
         assert f"phase.started  phase={phase}" in output, f"Missing phase.started for {phase}"
         assert f"phase.completed  phase={phase}" in output, f"Missing phase.completed for {phase}"

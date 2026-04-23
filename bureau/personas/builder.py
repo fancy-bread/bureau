@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-import anthropic
+from deepagents import create_deep_agent
+from deepagents.backends.filesystem import FilesystemBackend
+from deepagents.middleware.filesystem import FilesystemMiddleware
+from deepagents.middleware.memory import MemoryMiddleware
+from deepagents.middleware.skills import SkillsMiddleware
+from deepagents.middleware.summarization import SummarizationMiddleware
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from bureau.models import BuildAttempt
-from bureau.tools.file_tools import FILE_TOOLS, execute_file_tool
-from bureau.tools.shell_tools import SHELL_TOOLS, execute_shell_tool
-
-_ALL_TOOLS = FILE_TOOLS + SHELL_TOOLS
 
 _SYSTEM_TEMPLATE = """\
 You are Bureau's Builder persona. Implement the task plan by making code changes to \
@@ -48,22 +52,31 @@ The previous implementation attempt failed. Test output from last attempt:
 Review the failure, fix the root cause, and run the tests again.
 """
 
+_BUILDER_SKILL_DIRS = ("build", "test", "ship")
+
 
 def run_builder_attempt(
-    client: anthropic.Anthropic,
     spec_text: str,
     task_plan_text: str,
     constitution: str,
     test_cmd: str,
-    build_cmd: str,
     repo_path: str,
     model: str,
     ralph_round: int,
     attempt_num: int,
     previous_attempts: list[BuildAttempt],
+    skills_root: Path | None = None,
+    plan_text: str = "",
     timeout: int = 300,
 ) -> BuildAttempt:
     now_str = datetime.now(timezone.utc).isoformat()
+
+    # Pre-flight: verify required skill directories have at least one .md file
+    if skills_root is not None:
+        for skill_dir_name in _BUILDER_SKILL_DIRS:
+            skill_dir = skills_root / skill_dir_name
+            if not any(skill_dir.glob("*.md")):
+                raise ValueError(f"Required skill directory empty: {skill_dir}")
 
     system = _SYSTEM_TEMPLATE.format(
         constitution=constitution,
@@ -77,66 +90,74 @@ def run_builder_attempt(
     else:
         user_content = "Begin implementation per the task plan."
 
-    messages: list[dict[str, Any]] = [{"role": "user", "content": user_content}]
+    middleware: list[Any] = [
+        FilesystemMiddleware(backend=FilesystemBackend(root_dir=repo_path)),
+        SummarizationMiddleware(
+            model=model,
+            backend=FilesystemBackend(root_dir=repo_path),
+            keep=("messages", 20),
+        ),
+    ]
 
+    if skills_root is not None:
+        sources = [str(skills_root / d) for d in _BUILDER_SKILL_DIRS]
+        middleware.append(
+            SkillsMiddleware(
+                backend=FilesystemBackend(root_dir=str(skills_root)),
+                sources=sources,
+            )
+        )
+
+    if plan_text:
+        context_dir = tempfile.mkdtemp()
+        Path(context_dir, "plan.md").write_text(plan_text, encoding="utf-8")
+        middleware.append(
+            MemoryMiddleware(
+                backend=FilesystemBackend(root_dir=context_dir),
+                sources=[context_dir],
+            )
+        )
+
+    agent = create_deep_agent(
+        model=model,
+        system_prompt=system,
+        middleware=tuple(middleware),
+    )
+
+    result: dict[str, Any] = agent.invoke({"messages": [HumanMessage(content=user_content)]})
+
+    return _extract_build_attempt(result, ralph_round, attempt_num, now_str)
+
+
+def _extract_build_attempt(
+    agent_state: dict[str, Any],
+    ralph_round: int,
+    attempt_num: int,
+    timestamp: str,
+) -> BuildAttempt:
+    messages = agent_state.get("messages", [])
     files_changed: list[str] = []
     last_exit_code = -1
     last_test_output = ""
 
-    for _ in range(50):
-        response = client.messages.create(
-            model=model,
-            max_tokens=8192,
-            system=[
-                {
-                    "type": "text",
-                    "text": system,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
-            tools=_ALL_TOOLS,
-            messages=messages,
-        )
-
-        messages.append({"role": "assistant", "content": response.content})
-
-        if response.stop_reason != "tool_use":
-            break
-
-        tool_results = []
-        for block in response.content:
-            if block.type != "tool_use":
-                continue
-
-            if block.name in {"read_file", "write_file", "list_directory"}:
-                result = execute_file_tool(block.name, block.input, repo_path)
-                if block.name == "write_file" and not result.startswith("Error"):
-                    path = block.input.get("path", "")
+    for msg in messages:
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            for call in msg.tool_calls:
+                if call.get("name") == "write_file":
+                    path = call.get("args", {}).get("path", "")
                     if path and path not in files_changed:
                         files_changed.append(path)
-            elif block.name == "run_command":
-                result = execute_shell_tool(block.name, block.input, repo_path, timeout)
-                parsed = json.loads(result)
+
+        if isinstance(msg, ToolMessage):
+            try:
+                parsed = json.loads(msg.content)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if isinstance(parsed, dict) and "exit_code" in parsed:
                 last_exit_code = parsed["exit_code"]
-                last_test_output = parsed["stdout"]
-                if parsed["stderr"]:
-                    last_test_output += "\n" + parsed["stderr"]
-            else:
-                result = f"Error: unknown tool '{block.name}'"
-
-            tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
-
-        messages.append({"role": "user", "content": tool_results})
-
-    # If the Builder never ran any command, run test_cmd explicitly
-    if last_exit_code == -1:
-        cmd = f"{build_cmd} && {test_cmd}" if build_cmd else test_cmd
-        raw = execute_shell_tool("run_command", {"command": cmd}, repo_path, timeout)
-        parsed = json.loads(raw)
-        last_exit_code = parsed["exit_code"]
-        last_test_output = parsed["stdout"]
-        if parsed["stderr"]:
-            last_test_output += "\n" + parsed["stderr"]
+                stdout = parsed.get("stdout", "")
+                stderr = parsed.get("stderr", "")
+                last_test_output = stdout + ("\n" + stderr if stderr else "")
 
     truncated = last_test_output[-4000:] if len(last_test_output) > 4000 else last_test_output
 
@@ -147,5 +168,5 @@ def run_builder_attempt(
         test_output=truncated,
         test_exit_code=last_exit_code,
         passed=last_exit_code == 0,
-        timestamp=now_str,
+        timestamp=timestamp,
     )

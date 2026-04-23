@@ -10,7 +10,7 @@ from typing import Any
 class BureauConfig:
     planner_model: str = "claude-opus-4-7"
     builder_model: str = "claude-sonnet-4-6"
-    critic_model: str = "claude-opus-4-7"
+    reviewer_model: str = "claude-opus-4-7"
     github_token_env: str = "GITHUB_TOKEN"
     max_retries: int = 3
     max_builder_attempts: int = 3
@@ -45,7 +45,7 @@ def load_bureau_config(path: str | None = None) -> BureauConfig:
     return BureauConfig(
         planner_model=models.get("planner", bureau.get("planner_model", "claude-opus-4-7")),
         builder_model=models.get("builder", bureau.get("builder_model", "claude-sonnet-4-6")),
-        critic_model=models.get("critic", bureau.get("critic_model", "claude-opus-4-7")),
+        reviewer_model=models.get("reviewer", bureau.get("reviewer_model", "claude-opus-4-7")),
         github_token_env=github.get("token_env", "GITHUB_TOKEN"),
         max_retries=int(bureau.get("max_retries", 3)),
         max_builder_attempts=int(ralph_loop.get("max_builder_attempts", 3)),
