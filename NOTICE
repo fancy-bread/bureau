@@ -1,0 +1,16 @@
+Bureau includes vendored skills from third-party sources.
+
+--------------------------------------------------------------------------------
+agent-skills (https://github.com/addyosmani/agent-skills)
+Copyright (c) Addy Osmani
+Licensed under the MIT License
+
+Vendored files:
+  bureau/skills/addyosmani/build/SKILL.md   (incremental-implementation)
+  bureau/skills/addyosmani/test/SKILL.md    (test-driven-development)
+  bureau/skills/addyosmani/ship/SKILL.md    (shipping-and-launch)
+  bureau/skills/addyosmani/review/SKILL.md  (code-review-and-quality)
+
+Version: 0.5.0
+Tag: https://github.com/addyosmani/agent-skills/tree/0.5.0
+--------------------------------------------------------------------------------
