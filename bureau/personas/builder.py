@@ -8,10 +8,8 @@ from typing import Any
 
 from deepagents import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
-from deepagents.middleware.filesystem import FilesystemMiddleware
 from deepagents.middleware.memory import MemoryMiddleware
 from deepagents.middleware.skills import SkillsMiddleware
-from deepagents.middleware.summarization import SummarizationMiddleware
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from bureau.models import BuildAttempt
@@ -90,14 +88,7 @@ def run_builder_attempt(
     else:
         user_content = "Begin implementation per the task plan."
 
-    middleware: list[Any] = [
-        FilesystemMiddleware(backend=FilesystemBackend(root_dir=repo_path)),
-        SummarizationMiddleware(
-            model=model,
-            backend=FilesystemBackend(root_dir=repo_path),
-            keep=("messages", 20),
-        ),
-    ]
+    middleware: list[Any] = []
 
     if skills_root is not None:
         sources = [str(skills_root / d) for d in _BUILDER_SKILL_DIRS]
