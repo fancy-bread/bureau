@@ -68,7 +68,6 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
                 attempt_num=attempt_num,
                 previous_attempts=round_attempts,
                 skills_root=skills_root,
-                plan_text=plan_text,
                 timeout=timeout,
             )
         except ValueError as exc:

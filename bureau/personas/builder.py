@@ -61,7 +61,6 @@ def run_builder_attempt(
     attempt_num: int,
     previous_attempts: list[BuildAttempt],
     skills_root: Path | None = None,
-    plan_text: str = "",
     timeout: int = 300,
 ) -> BuildAttempt:
     now_str = datetime.now(timezone.utc).isoformat()
@@ -94,8 +93,15 @@ def run_builder_attempt(
         skills=skills,
     )
 
+    # Cap agent steps to prevent unbounded loops; deepagents defaults to 9999.
+    # At ~2-3s per API call, 120 steps ≈ 5-6 minutes, well within the timeout.
+    step_limit = max(20, timeout // 3)
+
     try:
-        result: dict[str, Any] = agent.invoke({"messages": [HumanMessage(content=user_content)]})
+        result: dict[str, Any] = agent.invoke(
+            {"messages": [HumanMessage(content=user_content)]},
+            config={"recursion_limit": step_limit},
+        )
     except Exception as exc:
         return BuildAttempt(
             round=ralph_round,
