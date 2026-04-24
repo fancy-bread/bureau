@@ -4,11 +4,14 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from deepagents import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from bureau import events
 from bureau.models import BuildAttempt
 
 _SYSTEM_TEMPLATE = """\
@@ -48,6 +51,28 @@ Review the failure, fix the root cause, and run the tests again.
 """
 
 _BUILDER_SKILL_DIRS = ("build", "test", "ship")
+
+_LOGGABLE_TOOLS = {"write_file", "read_file", "edit_file", "glob", "grep", "execute", "ls"}
+
+
+class _ProgressCallback(BaseCallbackHandler):
+    def on_tool_start(
+        self, serialized: dict[str, Any], input_str: str, *, run_id: UUID, **kwargs: Any
+    ) -> None:
+        tool = serialized.get("name", "unknown")
+        if tool not in _LOGGABLE_TOOLS:
+            return
+        inputs: dict[str, Any] = kwargs.get("inputs") or {}
+        detail = inputs.get("path") or inputs.get("command") or inputs.get("pattern") or ""
+        events.emit(events.BUILDER_TOOL, tool=tool, detail=str(detail)[:120] if detail else "")
+
+    def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
+        try:
+            parsed = json.loads(str(output))
+        except (json.JSONDecodeError, TypeError):
+            return
+        if isinstance(parsed, dict) and "exit_code" in parsed:
+            events.emit(events.BUILDER_TOOL, tool="execute", exit_code=parsed["exit_code"])
 
 
 def run_builder_attempt(
@@ -100,7 +125,7 @@ def run_builder_attempt(
     try:
         result: dict[str, Any] = agent.invoke(
             {"messages": [HumanMessage(content=user_content)]},
-            config={"recursion_limit": step_limit},
+            config={"recursion_limit": step_limit, "callbacks": [_ProgressCallback()]},
         )
     except Exception as exc:
         return BuildAttempt(

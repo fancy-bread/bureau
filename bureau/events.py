@@ -13,6 +13,7 @@ PHASE_COMPLETED = "phase.completed"
 RALPH_STARTED = "ralph.started"
 RALPH_ATTEMPT = "ralph.attempt"
 RALPH_COMPLETED = "ralph.completed"
+BUILDER_TOOL = "builder.tool"
 
 
 def emit(event: str, **kwargs: Any) -> None:
