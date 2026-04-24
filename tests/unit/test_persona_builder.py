@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from bureau.models import BuildAttempt
-from bureau.personas.builder import _extract_build_attempt, run_builder_attempt
+from bureau.personas.builder import _extract_build_attempt, _ProgressCallback, run_builder_attempt
 
 
 def _make_agent_state(messages: list) -> dict:
@@ -215,3 +216,84 @@ def test_run_builder_attempt_api_error_returns_failed_attempt(tmp_path):
     assert result.round == 1
     assert result.attempt == 2
     assert "529" in result.test_output
+
+
+def test_run_builder_attempt_preflight_raises_on_empty_skill_dir(tmp_path):
+    skills_root = tmp_path / "skills"
+    (skills_root / "build").mkdir(parents=True)
+    (skills_root / "test").mkdir(parents=True)
+    (skills_root / "ship").mkdir(parents=True)
+    # ship dir is empty — no .md files
+
+    with pytest.raises(ValueError, match="Required skill directory empty"):
+        run_builder_attempt(
+            spec_text="# Test",
+            task_plan_text="",
+            constitution="",
+            test_cmd="pytest",
+            repo_path=str(tmp_path),
+            model="claude-sonnet-4-6",
+            ralph_round=0,
+            attempt_num=0,
+            previous_attempts=[],
+            skills_root=skills_root,
+        )
+
+
+def test_extract_ignores_tool_message_with_invalid_json():
+    state = _make_agent_state(
+        [
+            ToolMessage(content="not json", tool_call_id="tc1"),
+            _tool_run_command(0, "passed", tool_call_id="tc2"),
+        ]
+    )
+    result = _extract_build_attempt(state, ralph_round=0, attempt_num=0, timestamp="ts")
+    assert result.passed is True
+
+
+# --- _ProgressCallback tests ---
+
+
+def _make_run_id():
+    from uuid import uuid4
+
+    return uuid4()
+
+
+def test_progress_callback_on_tool_start_emits_event(capsys):
+    cb = _ProgressCallback()
+    cb.on_tool_start(
+        {"name": "write_file"},
+        "",
+        run_id=_make_run_id(),
+        inputs={"path": "src/foo.py", "content": "x"},
+    )
+    out = capsys.readouterr().out
+    assert "builder.tool" in out
+    assert "write_file" in out
+    assert "src/foo.py" in out
+
+
+def test_progress_callback_skips_non_loggable_tool(capsys):
+    cb = _ProgressCallback()
+    cb.on_tool_start({"name": "write_todos"}, "", run_id=_make_run_id())
+    assert capsys.readouterr().out == ""
+
+
+def test_progress_callback_on_tool_end_emits_exit_code(capsys):
+    import json as _json
+
+    cb = _ProgressCallback()
+    cb.on_tool_end(
+        _json.dumps({"exit_code": 0, "stdout": "1 passed", "stderr": ""}),
+        run_id=_make_run_id(),
+    )
+    out = capsys.readouterr().out
+    assert "builder.tool" in out
+    assert "exit_code=0" in out
+
+
+def test_progress_callback_on_tool_end_ignores_non_json(capsys):
+    cb = _ProgressCallback()
+    cb.on_tool_end("plain string output", run_id=_make_run_id())
+    assert capsys.readouterr().out == ""
