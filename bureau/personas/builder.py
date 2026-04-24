@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -95,25 +94,20 @@ def run_builder_attempt(
         skills=skills,
     )
 
-    result: dict[str, Any] = _invoke_with_backoff(
-        agent, {"messages": [HumanMessage(content=user_content)]}
-    )
+    try:
+        result: dict[str, Any] = agent.invoke({"messages": [HumanMessage(content=user_content)]})
+    except Exception as exc:
+        return BuildAttempt(
+            round=ralph_round,
+            attempt=attempt_num,
+            files_changed=[],
+            test_output=str(exc)[-4000:],
+            test_exit_code=-1,
+            passed=False,
+            timestamp=now_str,
+        )
 
     return _extract_build_attempt(result, ralph_round, attempt_num, now_str)
-
-
-def _invoke_with_backoff(agent: Any, inputs: dict[str, Any], *, max_retries: int = 5) -> dict[str, Any]:
-    delay = 2.0
-    for attempt in range(max_retries):
-        try:
-            return agent.invoke(inputs)
-        except Exception as exc:
-            msg = str(exc).lower()
-            if ("529" in msg or "overloaded" in msg) and attempt < max_retries - 1:
-                time.sleep(delay)
-                delay = min(delay * 2, 60.0)
-                continue
-            raise
 
 
 def _extract_build_attempt(
