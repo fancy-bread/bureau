@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from deepagents import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
-from deepagents.middleware.memory import MemoryMiddleware
-from deepagents.middleware.skills import SkillsMiddleware
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from bureau.models import BuildAttempt
@@ -88,31 +85,13 @@ def run_builder_attempt(
     else:
         user_content = "Begin implementation per the task plan."
 
-    middleware: list[Any] = []
-
-    if skills_root is not None:
-        sources = [str(skills_root / d) for d in _BUILDER_SKILL_DIRS]
-        middleware.append(
-            SkillsMiddleware(
-                backend=FilesystemBackend(root_dir=str(skills_root)),
-                sources=sources,
-            )
-        )
-
-    if plan_text:
-        context_dir = tempfile.mkdtemp()
-        Path(context_dir, "plan.md").write_text(plan_text, encoding="utf-8")
-        middleware.append(
-            MemoryMiddleware(
-                backend=FilesystemBackend(root_dir=context_dir),
-                sources=[context_dir],
-            )
-        )
+    skills = [str(skills_root / d) for d in _BUILDER_SKILL_DIRS] if skills_root is not None else None
 
     agent = create_deep_agent(
         model=model,
         system_prompt=system,
-        middleware=tuple(middleware),
+        backend=FilesystemBackend(root_dir=repo_path, virtual_mode=False),
+        skills=skills,
     )
 
     result: dict[str, Any] = agent.invoke({"messages": [HumanMessage(content=user_content)]})
