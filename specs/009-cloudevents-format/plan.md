@@ -108,7 +108,7 @@ from uuid import uuid4
 def _emit_cloudevents(event: str, **kwargs: Any) -> None:
     ce = CloudEvent(
         attributes={
-            "type": f"io.bureau.{event}",
+            "type": f"com.fancybread.bureau.{event}",
             "source": _source_uri,
             "id": str(uuid4()),
             "time": datetime.now(timezone.utc).isoformat(),

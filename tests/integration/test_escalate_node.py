@@ -88,7 +88,7 @@ def test_escalation_cloudevents_structured_fields(capsys, monkeypatch):
     lines = [ln for ln in capsys.readouterr().out.strip().splitlines() if ln]
     assert len(lines) == 1, f"Expected 1 NDJSON line, got: {lines}"
     envelope = json.loads(lines[0])
-    assert envelope["type"] == "io.bureau.run.escalated"
+    assert envelope["type"] == "com.fancybread.bureau.run.escalated"
     data = envelope["data"]
     assert "what_happened" in data
     assert "what_is_needed" in data

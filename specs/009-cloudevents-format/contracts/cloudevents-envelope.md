@@ -51,22 +51,22 @@ Defines the JSON structure each bureau event must produce in CloudEvents mode. V
 
 ## Per-Event `data` Schemas
 
-### `io.bureau.run.started`
+### `com.fancybread.bureau.run.started`
 ```json
 { "run_id": "string (required)", "spec": "string (required)", "repo": "string (required)", "resumed": "boolean (optional)" }
 ```
 
-### `io.bureau.run.completed`
+### `com.fancybread.bureau.run.completed`
 ```json
 { "run_id": "string (required)", "pr": "string (required)", "duration": "string (required)" }
 ```
 
-### `io.bureau.run.failed`
+### `com.fancybread.bureau.run.failed`
 ```json
 { "run_id": "string (required)", "phase": "string (required)", "error": "string (required)" }
 ```
 
-### `io.bureau.run.escalated`
+### `com.fancybread.bureau.run.escalated`
 ```json
 {
   "run_id": "string (required)",
@@ -77,12 +77,12 @@ Defines the JSON structure each bureau event must produce in CloudEvents mode. V
 }
 ```
 
-### `io.bureau.phase.started`
+### `com.fancybread.bureau.phase.started`
 ```json
 { "phase": "string (required)", "stub": "boolean (optional)" }
 ```
 
-### `io.bureau.phase.completed`
+### `com.fancybread.bureau.phase.completed`
 ```json
 {
   "phase": "string (required)",
@@ -94,12 +94,12 @@ Defines the JSON structure each bureau event must produce in CloudEvents mode. V
 }
 ```
 
-### `io.bureau.ralph.started`
+### `com.fancybread.bureau.ralph.started`
 ```json
 { "phase": "string (required)", "round": "integer (required)" }
 ```
 
-### `io.bureau.ralph.attempt`
+### `com.fancybread.bureau.ralph.attempt`
 ```json
 {
   "phase": "string (required)",
@@ -111,12 +111,12 @@ Defines the JSON structure each bureau event must produce in CloudEvents mode. V
 }
 ```
 
-### `io.bureau.ralph.completed`
+### `com.fancybread.bureau.ralph.completed`
 ```json
 { "rounds": "integer (required)", "verdict": "string (required)" }
 ```
 
-### `io.bureau.builder.tool`
+### `com.fancybread.bureau.builder.tool`
 ```json
 {
   "tool": "string enum (required): write_file | read_file | edit_file | glob | grep | execute | ls",

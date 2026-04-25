@@ -48,7 +48,7 @@ def _emit_cloudevents(event: str, **kwargs: Any) -> None:
         _register_run(kwargs["id"])
     ce = CloudEvent(
         attributes={
-            "type": f"io.bureau.{event}",
+            "type": f"com.fancybread.bureau.{event}",
             "source": _source_uri,
             "id": str(uuid4()),
             "time": datetime.now(timezone.utc).isoformat(),

@@ -18,7 +18,7 @@ Bureau is the autonomous runtime for [ASDLC](https://asdlc.io). You hand it an a
 Set `BUREAU_OUTPUT_FORMAT=cloudevents` to emit [CloudEvents 1.0](https://cloudevents.io) NDJSON instead — one JSON object per line, parseable by any structured log consumer:
 
 ```json
-{"specversion":"1.0","id":"8b67eaba...","source":"urn:bureau:run:run-a3f9c2b1","type":"io.bureau.run.started","time":"2026-04-25T14:32:00.123Z","datacontenttype":"application/json","data":{"id":"run-a3f9c2b1","spec":"specs/002-auth/spec.md","repo":"./"}}
+{"specversion":"1.0","id":"8b67eaba...","source":"urn:bureau:run:run-a3f9c2b1","type":"com.fancybread.bureau.run.started","time":"2026-04-25T14:32:00.123Z","datacontenttype":"application/json","data":{"id":"run-a3f9c2b1","spec":"specs/002-auth/spec.md","repo":"./"}}
 ```
 
 ---
@@ -171,7 +171,7 @@ Bureau emits one event per line to stdout. The format is controlled by `BUREAU_O
 | `text` (default) | `[bureau] event  key=value  key=value` | ✅ |
 | `cloudevents` | CloudEvents 1.0 NDJSON | — |
 
-CloudEvents mode produces spec-compliant envelopes with `specversion`, `id`, `source` (`urn:bureau:run:<run-id>`), `type` (`io.bureau.<event>`), `time`, `datacontenttype`, and `data`. Every event type in bureau's schema is supported.
+CloudEvents mode produces spec-compliant envelopes with `specversion`, `id`, `source` (`urn:bureau:run:<run-id>`), `type` (`com.fancybread.bureau.<event>`), `time`, `datacontenttype`, and `data`. Every event type in bureau's schema is supported.
 
 Both variables are set the same way as `ANTHROPIC_API_KEY` — in `~/.bureau/.env` for persistent local config, or as shell/CI environment variables for per-invocation control. See `bureau/data/env.example` for the full list.
 

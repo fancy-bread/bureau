@@ -24,7 +24,7 @@ Represents one CloudEvents 1.0 structured event as it will be serialized to stdo
 | `specversion`     | string  | yes      | Always `"1.0"`                              |
 | `id`              | string  | yes      | UUID v4 generated at emit time              |
 | `source`          | URI     | yes      | `urn:bureau:run:<run-id>` or `BUREAU_SOURCE_URI` env override |
-| `type`            | string  | yes      | `io.bureau.<event-name>`                    |
+| `type`            | string  | yes      | `com.fancybread.bureau.<event-name>`                    |
 | `time`            | string  | yes      | RFC 3339 UTC timestamp at emit time         |
 | `datacontenttype` | string  | yes      | Always `"application/json"`                 |
 | `data`            | object  | yes      | Event-specific fields per v1.0.0 schema; `{}` if none |

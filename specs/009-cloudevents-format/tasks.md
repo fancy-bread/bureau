@@ -39,9 +39,9 @@
 
 **Independent Test**: Set `BUREAU_OUTPUT_FORMAT=cloudevents`, run `bureau run <spec> --repo <repo>` against the test repo, parse each stdout line as JSON, and validate CloudEvents attributes (`specversion`, `id`, `source`, `type`, `time`, `datacontenttype`, `data`) are present and well-formed.
 
-- [X] T005 [US1] Implement `_emit_cloudevents(event: str, **kwargs: Any) -> None` in `bureau/events.py` using `cloudevents.http.CloudEvent` and `cloudevents.conversion.to_json` — builds envelope with `type=f"io.bureau.{event}"`, `source=_source_uri`, UUID v4 `id`, RFC 3339 `time`, `datacontenttype="application/json"`, `data=kwargs or {}`, then calls `_register_run(kwargs["id"])` when event is `run.started`
+- [X] T005 [US1] Implement `_emit_cloudevents(event: str, **kwargs: Any) -> None` in `bureau/events.py` using `cloudevents.http.CloudEvent` and `cloudevents.conversion.to_json` — builds envelope with `type=f"com.fancybread.bureau.{event}"`, `source=_source_uri`, UUID v4 `id`, RFC 3339 `time`, `datacontenttype="application/json"`, `data=kwargs or {}`, then calls `_register_run(kwargs["id"])` when event is `run.started`
 - [X] T006 [US1] Update `emit()` in `bureau/events.py` to branch on `_FORMAT`: when `OutputFormat.CLOUDEVENTS` call `_emit_cloudevents(event, **kwargs)`; when `OutputFormat.TEXT` execute existing `[bureau] event  k=v` print (no change to text path)
-- [X] T007 [US1] Add CloudEvents mode unit tests to `tests/unit/test_events.py`: set `BUREAU_OUTPUT_FORMAT=cloudevents` via monkeypatch, call `emit()` for each of the 10 event types, parse stdout as JSON, assert `specversion=="1.0"`, `type==f"io.bureau.{event}"`, `source` contains run ID after `run.started`, `datacontenttype=="application/json"`, `data` is a dict
+- [X] T007 [US1] Add CloudEvents mode unit tests to `tests/unit/test_events.py`: set `BUREAU_OUTPUT_FORMAT=cloudevents` via monkeypatch, call `emit()` for each of the 10 event types, parse stdout as JSON, assert `specversion=="1.0"`, `type==f"com.fancybread.bureau.{event}"`, `source` contains run ID after `run.started`, `datacontenttype=="application/json"`, `data` is a dict
 
 **Checkpoint**: `BUREAU_OUTPUT_FORMAT=cloudevents pytest tests/unit/test_events.py` passes. Each tested emit call produces valid JSON on one line.
 

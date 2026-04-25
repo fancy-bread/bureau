@@ -110,7 +110,7 @@ def test_cloudevents_emit_valid_envelope(event_name, kwargs, capsys, monkeypatch
     assert out, "Expected output on stdout"
     envelope = json.loads(out)
     assert envelope["specversion"] == "1.0"
-    assert envelope["type"] == f"io.bureau.{event_name}"
+    assert envelope["type"] == f"com.fancybread.bureau.{event_name}"
     assert envelope["datacontenttype"] == "application/json"
     assert isinstance(envelope["data"], dict)
     assert "id" in envelope

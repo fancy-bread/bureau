@@ -15,7 +15,7 @@ Every CloudEvents 1.0 JSON object MUST include:
 | `specversion`    | string | Always `"1.0"`                                          |
 | `id`             | string | Unique per event per source; UUID v4 is conventional    |
 | `source`         | URI    | Identifies the producing system                         |
-| `type`           | string | Reverse-DNS namespaced; e.g. `io.bureau.run.started`    |
+| `type`           | string | Reverse-DNS namespaced; e.g. `com.fancybread.bureau.run.started`    |
 
 ### Optional Context Attributes (used by bureau)
 
@@ -35,7 +35,7 @@ When `datacontenttype` is `application/json`, `data` is an inline JSON object (n
   "specversion": "1.0",
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "source": "urn:bureau:run:run-cbf3c2b9",
-  "type": "io.bureau.run.started",
+  "type": "com.fancybread.bureau.run.started",
   "time": "2026-04-25T14:32:00.123Z",
   "datacontenttype": "application/json",
   "data": {
@@ -65,7 +65,7 @@ from cloudevents.conversion import to_json
 
 event = CloudEvent(
     attributes={
-        "type": "io.bureau.run.started",
+        "type": "com.fancybread.bureau.run.started",
         "source": "urn:bureau:run:run-cbf3c2b9",
         "id": str(uuid4()),
         "time": datetime.now(timezone.utc).isoformat(),
@@ -124,18 +124,18 @@ The existing `emit()` and `phase()` functions remain as the public API surface. 
 
 | Bureau event        | CloudEvents `type`                |
 |---------------------|-----------------------------------|
-| `run.started`       | `io.bureau.run.started`           |
-| `run.completed`     | `io.bureau.run.completed`         |
-| `run.failed`        | `io.bureau.run.failed`            |
-| `run.escalated`     | `io.bureau.run.escalated`         |
-| `phase.started`     | `io.bureau.phase.started`         |
-| `phase.completed`   | `io.bureau.phase.completed`       |
-| `ralph.started`     | `io.bureau.ralph.started`         |
-| `ralph.attempt`     | `io.bureau.ralph.attempt`         |
-| `ralph.completed`   | `io.bureau.ralph.completed`       |
-| `builder.tool`      | `io.bureau.builder.tool`          |
+| `run.started`       | `com.fancybread.bureau.run.started`           |
+| `run.completed`     | `com.fancybread.bureau.run.completed`         |
+| `run.failed`        | `com.fancybread.bureau.run.failed`            |
+| `run.escalated`     | `com.fancybread.bureau.run.escalated`         |
+| `phase.started`     | `com.fancybread.bureau.phase.started`         |
+| `phase.completed`   | `com.fancybread.bureau.phase.completed`       |
+| `ralph.started`     | `com.fancybread.bureau.ralph.started`         |
+| `ralph.attempt`     | `com.fancybread.bureau.ralph.attempt`         |
+| `ralph.completed`   | `com.fancybread.bureau.ralph.completed`       |
+| `builder.tool`      | `com.fancybread.bureau.builder.tool`          |
 
-Pattern: `io.bureau.<event-name>` — direct mapping, no transformation needed beyond prepending the namespace.
+Pattern: `com.fancybread.bureau.<event-name>` — direct mapping, no transformation needed beyond prepending the namespace.
 
 ---
 

@@ -22,7 +22,7 @@ An operator running bureau in a pipeline wants structured, machine-readable even
 
 **Acceptance Scenarios**:
 
-1. **Given** bureau is configured to emit CloudEvents format, **When** a run starts, **Then** stdout contains a single-line JSON object with `specversion: "1.0"`, `type: "io.bureau.run.started"`, a `source` URI containing the run ID, an RFC 3339 `time`, a unique `id`, and `data` containing `run_id`, `spec`, and `repo`.
+1. **Given** bureau is configured to emit CloudEvents format, **When** a run starts, **Then** stdout contains a single-line JSON object with `specversion: "1.0"`, `type: "com.fancybread.bureau.run.started"`, a `source` URI containing the run ID, an RFC 3339 `time`, a unique `id`, and `data` containing `run_id`, `spec`, and `repo`.
 
 2. **Given** bureau is configured to emit CloudEvents format, **When** any event is emitted, **Then** each event appears as exactly one complete JSON object on its own line (NDJSON), with no trailing content on that line.
 
@@ -77,8 +77,8 @@ When bureau escalates (pauses for human input), the escalation detail — what h
 
 - **FR-001**: The event output format MUST be selectable between `text` (default) and `cloudevents` via an environment variable (`BUREAU_OUTPUT_FORMAT`) or configuration file entry.
 - **FR-002**: In CloudEvents mode, every bureau event MUST be emitted as a single-line JSON object conforming to CloudEvents 1.0 specification, written to stdout with an immediate flush.
-- **FR-003**: Each CloudEvents envelope MUST include `specversion: "1.0"`, `type` (prefixed `io.bureau.`), `source` (URI containing the run ID), `id` (unique per event), `time` (RFC 3339 UTC), `datacontenttype: "application/json"`, and `data` (object).
-- **FR-004**: The `type` field MUST map bureau event names to the `io.bureau.<event-name>` namespace (e.g. `run.started` → `io.bureau.run.started`).
+- **FR-003**: Each CloudEvents envelope MUST include `specversion: "1.0"`, `type` (prefixed `com.fancybread.bureau.`), `source` (URI containing the run ID), `id` (unique per event), `time` (RFC 3339 UTC), `datacontenttype: "application/json"`, and `data` (object).
+- **FR-004**: The `type` field MUST map bureau event names to the `com.fancybread.bureau.<event-name>` namespace (e.g. `run.started` → `com.fancybread.bureau.run.started`).
 - **FR-005**: All event-specific fields from the v1.0.0 schema MUST appear in the CloudEvents `data` object, with required fields always present and optional fields omitted when not applicable.
 - **FR-006**: In plain-text mode, all existing event output MUST remain byte-for-byte identical to the current format — no changes to existing consumers.
 - **FR-007**: In CloudEvents mode, `run.escalated` MUST include `what_happened` and `what_is_needed` as structured string fields in `data`, and the raw unstructured print lines for those fields MUST be suppressed.

@@ -51,7 +51,7 @@ Each `emit()` call produces exactly one line:
 Each `emit()` call produces exactly one line of NDJSON:
 
 ```json
-{"specversion":"1.0","id":"<uuid4>","source":"<uri>","type":"io.bureau.<event>","time":"<rfc3339>","datacontenttype":"application/json","data":{<event-fields>}}
+{"specversion":"1.0","id":"<uuid4>","source":"<uri>","type":"com.fancybread.bureau.<event>","time":"<rfc3339>","datacontenttype":"application/json","data":{<event-fields>}}
 ```
 
 - Single line (no pretty-printing)
@@ -64,16 +64,16 @@ Each `emit()` call produces exactly one line of NDJSON:
 
 | `event` arg        | `type` attribute              |
 |--------------------|-------------------------------|
-| `run.started`      | `io.bureau.run.started`       |
-| `run.completed`    | `io.bureau.run.completed`     |
-| `run.failed`       | `io.bureau.run.failed`        |
-| `run.escalated`    | `io.bureau.run.escalated`     |
-| `phase.started`    | `io.bureau.phase.started`     |
-| `phase.completed`  | `io.bureau.phase.completed`   |
-| `ralph.started`    | `io.bureau.ralph.started`     |
-| `ralph.attempt`    | `io.bureau.ralph.attempt`     |
-| `ralph.completed`  | `io.bureau.ralph.completed`   |
-| `builder.tool`     | `io.bureau.builder.tool`      |
+| `run.started`      | `com.fancybread.bureau.run.started`       |
+| `run.completed`    | `com.fancybread.bureau.run.completed`     |
+| `run.failed`       | `com.fancybread.bureau.run.failed`        |
+| `run.escalated`    | `com.fancybread.bureau.run.escalated`     |
+| `phase.started`    | `com.fancybread.bureau.phase.started`     |
+| `phase.completed`  | `com.fancybread.bureau.phase.completed`   |
+| `ralph.started`    | `com.fancybread.bureau.ralph.started`     |
+| `ralph.attempt`    | `com.fancybread.bureau.ralph.attempt`     |
+| `ralph.completed`  | `com.fancybread.bureau.ralph.completed`   |
+| `builder.tool`     | `com.fancybread.bureau.builder.tool`      |
 
 ### `source` Resolution
 
