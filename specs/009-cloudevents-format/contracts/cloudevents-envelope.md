@@ -7,7 +7,7 @@ Defines the JSON structure each bureau event must produce in CloudEvents mode. V
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/fancy-bread/bureau/schemas/cloudevents-envelope/1.0.0",
+  "$id": "urn:bureau:schema:cloudevents-envelope:1.0.0",
   "title": "Bureau CloudEvents Envelope",
   "type": "object",
   "required": ["specversion", "id", "source", "type", "time", "datacontenttype", "data"],
