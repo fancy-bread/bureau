@@ -7,7 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from deepagents import create_deep_agent
-from deepagents.backends.filesystem import FilesystemBackend
+from deepagents.backends.local_shell import LocalShellBackend
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
@@ -55,6 +55,22 @@ _BUILDER_SKILL_DIRS = ("build", "test", "ship")
 _LOGGABLE_TOOLS = {"write_file", "read_file", "edit_file", "glob", "grep", "execute", "ls"}
 
 
+def _parse_detail(input_str: str) -> str:
+    """Extract a single meaningful value from a tool's input_str for logging."""
+    try:
+        parsed = json.loads(input_str)
+        if isinstance(parsed, dict):
+            return str(
+                parsed.get("path")
+                or parsed.get("command")
+                or parsed.get("pattern")
+                or next(iter(parsed.values()), "")
+            )
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return input_str[:80] if input_str else ""
+
+
 class _ProgressCallback(BaseCallbackHandler):
     def on_tool_start(
         self, serialized: dict[str, Any], input_str: str, *, run_id: UUID, **kwargs: Any
@@ -63,7 +79,12 @@ class _ProgressCallback(BaseCallbackHandler):
         if tool not in _LOGGABLE_TOOLS:
             return
         inputs: dict[str, Any] = kwargs.get("inputs") or {}
-        detail = inputs.get("path") or inputs.get("command") or inputs.get("pattern") or ""
+        detail = (
+            inputs.get("path")
+            or inputs.get("command")
+            or inputs.get("pattern")
+            or _parse_detail(input_str)
+        )
         events.emit(events.BUILDER_TOOL, tool=tool, detail=str(detail)[:120] if detail else "")
 
     def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
@@ -114,7 +135,7 @@ def run_builder_attempt(
     agent = create_deep_agent(
         model=model,
         system_prompt=system,
-        backend=FilesystemBackend(root_dir=repo_path, virtual_mode=False),
+        backend=LocalShellBackend(root_dir=repo_path, virtual_mode=False, inherit_env=True),
         skills=skills,
     )
 
