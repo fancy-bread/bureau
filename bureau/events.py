@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import os
 import time
 from contextlib import contextmanager
+from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, Generator
+from uuid import uuid4
+
+from cloudevents.v1.conversion import to_json
+from cloudevents.v1.http import CloudEvent
 
 RUN_STARTED = "run.started"
 RUN_COMPLETED = "run.completed"
@@ -16,8 +23,46 @@ RALPH_COMPLETED = "ralph.completed"
 BUILDER_TOOL = "builder.tool"
 
 
+class OutputFormat(Enum):
+    TEXT = "text"
+    CLOUDEVENTS = "cloudevents"
+
+
+_FORMAT = OutputFormat(os.environ.get("BUREAU_OUTPUT_FORMAT", "text").lower())
+
+_source_uri: str = os.environ.get("BUREAU_SOURCE_URI", "urn:bureau:run:unknown")
+
+
+def _register_run(run_id: str) -> None:
+    global _source_uri
+    if not os.environ.get("BUREAU_SOURCE_URI"):
+        _source_uri = f"urn:bureau:run:{run_id}"
+
+
+def is_cloudevents_mode() -> bool:
+    return _FORMAT == OutputFormat.CLOUDEVENTS
+
+
+def _emit_cloudevents(event: str, **kwargs: Any) -> None:
+    if event == RUN_STARTED and "id" in kwargs:
+        _register_run(kwargs["id"])
+    ce = CloudEvent(
+        attributes={
+            "type": f"com.fancybread.bureau.{event}",
+            "source": _source_uri,
+            "id": str(uuid4()),
+            "time": datetime.now(timezone.utc).isoformat(),
+            "datacontenttype": "application/json",
+        },
+        data=kwargs or {},
+    )
+    print(to_json(ce).decode(), flush=True)
+
+
 def emit(event: str, **kwargs: Any) -> None:
-    """Print a structured bureau run event to stdout."""
+    if _FORMAT == OutputFormat.CLOUDEVENTS:
+        _emit_cloudevents(event, **kwargs)
+        return
     parts = [f"[bureau] {event}"]
     for key, value in kwargs.items():
         parts.append(f"{key}={value}")

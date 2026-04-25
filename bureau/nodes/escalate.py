@@ -18,15 +18,18 @@ def escalate_node(state: dict[str, Any]) -> dict[str, Any]:
             id=run_id,
             phase=esc.phase,
             reason=esc.reason,
+            what_happened=esc.what_happened[:1000],
+            what_is_needed=esc.what_is_needed,
         )
-        print()
-        print(f"  What happened:  {esc.what_happened}")
-        print(f"  What's needed:  {esc.what_is_needed}")
-        print("  Options:")
-        for i, opt in enumerate(esc.options, 1):
-            print(f"    {i}. {opt}")
-        print()
-        print(f'  Resume: bureau resume {run_id} --response "..."')
+        if not events.is_cloudevents_mode():
+            print()
+            print(f"  What happened:  {esc.what_happened}")
+            print(f"  What's needed:  {esc.what_is_needed}")
+            print("  Options:")
+            for i, opt in enumerate(esc.options, 1):
+                print(f"    {i}. {opt}")
+            print()
+            print(f'  Resume: bureau resume {run_id} --response "..."')
     else:
         events.emit(
             events.RUN_ESCALATED, id=run_id, phase=state.get("phase", "unknown"), reason="UNKNOWN"

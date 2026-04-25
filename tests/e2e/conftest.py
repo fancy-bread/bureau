@@ -25,7 +25,7 @@ SKIP_NO_KEY = pytest.mark.skipif(
 
 
 @pytest.fixture(scope="session")
-def bureau_test_repo():
+def _bureau_test_repo_path():
     repo_path = os.environ.get("BUREAU_TEST_REPO_PYTHON") or os.environ.get("BUREAU_TEST_REPO")
     assert repo_path, "BUREAU_TEST_REPO_PYTHON must be set"
     assert Path(repo_path).exists(), f"BUREAU_TEST_REPO_PYTHON path does not exist: {repo_path}"
@@ -33,6 +33,14 @@ def bureau_test_repo():
     subprocess.run(["git", "-C", repo_path, "pull"], check=True)
     yield repo_path
     subprocess.run(["git", "-C", repo_path, "checkout", "main"], check=False)
+
+
+@pytest.fixture()
+def bureau_test_repo(_bureau_test_repo_path):
+    """Reset to main before each test so stale feature branches don't bleed across tests."""
+    subprocess.run(["git", "-C", _bureau_test_repo_path, "checkout", "main"], check=True)
+    subprocess.run(["git", "-C", _bureau_test_repo_path, "reset", "--hard", "origin/main"], check=True)
+    return _bureau_test_repo_path
 
 
 def bureau_exe() -> str:

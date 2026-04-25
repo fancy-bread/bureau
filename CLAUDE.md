@@ -76,6 +76,13 @@ tasks.md
 Most hooks are optional git auto-commits. The `before_constitution` hook (git initialize)
 is mandatory. When editing extensions.yml, `optional: false` + `condition: null` = always runs.
 
+## deepagents Reference
+
+- GitHub: https://github.com/langchain-ai/deepagents
+- Docs: https://docs.langchain.com/oss/python/deepagents (high-level only; source is more reliable)
+- `execute` tool returns plain text ending with `[Command succeeded/failed with exit code N]` — not JSON
+- For implementation questions, read the installed source: `.venv/lib/python3.14/site-packages/deepagents/`
+
 ## Active Technologies
 - Python 3.14 + langgraph 0.2+, langgraph-checkpoint-sqlite, anthropic>=0.25, typer>=0.12, pydantic>=2, python-dotenv>=1.0
 - SQLite per-run checkpoint via `SqliteSaver` (`~/.bureau/runs/<run-id>/checkpoint.db`); memory.json per-run scratchpad
@@ -88,6 +95,7 @@ is mandatory. When editing extensions.yml, `optional: false` + `condition: null`
 - Critic persona and node renamed to Reviewer throughout; `Phase.REVIEWER`, `ReviewerVerdict`, `ReviewerFinding`, `reviewer_model` in config (007-deepagents-verifier-skills)
 - Python 3.14 (no code changes) + None new — file replacement only (008-enrich-skills)
 - `bureau/skills/addyosmani/{build,test,ship,review}/SKILL.md` (tracked in git); skills sourced from addyosmani/agent-skills@0.5.0 with attribution frontmatter (008-enrich-skills)
+- `cloudevents>=1.11` (new dep for CloudEvents envelope construction, 009-cloudevents-format); `OutputFormat` enum + `BUREAU_OUTPUT_FORMAT` env var selects text (default) vs CloudEvents NDJSON mode; `cloudevents.v1.http.CloudEvent` + `cloudevents.v1.conversion.to_json` for envelope serialization
 
 ## Recent Changes
 - 007-deepagents-verifier-skills: deepagents>=0.5.3 added; Builder replaced with `create_deep_agent` adapter + `_extract_build_attempt()` state bridge; Critic renamed to Reviewer throughout (Phase, models, nodes, personas, tests, constitution v1.2.0); ASDLC skills vendored to `bureau/skills/addyosmani/{build,test,ship,review}/`; Builder wired with build/test/ship skills + MemoryMiddleware; Reviewer wired with review skill pre-flight check
