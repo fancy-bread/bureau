@@ -18,6 +18,10 @@ _SYSTEM_TEMPLATE = """\
 You are Bureau's Builder persona. Implement the task plan by making code changes to \
 the target repo and running the test suite.
 
+## Target Repository
+Your working directory is: {repo_path}
+All file paths are relative to this directory. Do not read or write files outside it.
+
 ## Bureau Constitution
 {constitution}
 
@@ -28,16 +32,17 @@ the target repo and running the test suite.
 {task_plan_text}
 
 ## Instructions
-1. Read relevant files to understand the existing code.
+1. Start by listing files in {repo_path} to understand the project structure.
 2. Implement the tasks in dependency order.
 3. After making changes, run the test command to verify: `{test_cmd}`
-4. If tests fail, read the output, fix the issues, and run again.
+4. If tests fail, read the output carefully, fix the root cause, and run again.
 5. Stop when the test command exits with code 0.
 
 IMPORTANT:
 - Always provide complete file content when using write_file (no partial writes).
 - Run `{test_cmd}` after each significant set of changes.
 - Do not modify test files unless the task explicitly requires it.
+- Work only within {repo_path}; never explore the broader filesystem.
 """
 
 _RETRY_TEMPLATE = """\
@@ -123,6 +128,7 @@ def run_builder_attempt(
         spec_text=spec_text,
         task_plan_text=task_plan_text,
         test_cmd=test_cmd,
+        repo_path=repo_path,
     )
 
     if previous_attempts:
