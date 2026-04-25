@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -59,6 +60,9 @@ _BUILDER_SKILL_DIRS = ("build", "test", "ship")
 
 _LOGGABLE_TOOLS = {"write_file", "read_file", "edit_file", "glob", "grep", "execute", "ls"}
 
+# deepagents execute tool returns plain text ending with this marker
+_EXIT_CODE_RE = re.compile(r"\[Command (?:succeeded|failed) with exit code (\d+)\]")
+
 
 def _parse_detail(input_str: str) -> str:
     """Extract a single meaningful value from a tool's input_str for logging."""
@@ -93,12 +97,9 @@ class _ProgressCallback(BaseCallbackHandler):
         events.emit(events.BUILDER_TOOL, tool=tool, detail=str(detail)[:120] if detail else "")
 
     def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
-        try:
-            parsed = json.loads(str(output))
-        except (json.JSONDecodeError, TypeError):
-            return
-        if isinstance(parsed, dict) and "exit_code" in parsed:
-            events.emit(events.BUILDER_TOOL, tool="execute", exit_code=parsed["exit_code"])
+        match = _EXIT_CODE_RE.search(str(output))
+        if match:
+            events.emit(events.BUILDER_TOOL, tool="execute", exit_code=int(match.group(1)))
 
 
 def run_builder_attempt(
@@ -188,15 +189,11 @@ def _extract_build_attempt(
                         files_changed.append(path)
 
         if isinstance(msg, ToolMessage):
-            try:
-                parsed = json.loads(msg.content)
-            except (json.JSONDecodeError, TypeError):
-                continue
-            if isinstance(parsed, dict) and "exit_code" in parsed:
-                last_exit_code = parsed["exit_code"]
-                stdout = parsed.get("stdout", "")
-                stderr = parsed.get("stderr", "")
-                last_test_output = stdout + ("\n" + stderr if stderr else "")
+            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+            match = _EXIT_CODE_RE.search(content)
+            if match:
+                last_exit_code = int(match.group(1))
+                last_test_output = content[: match.start()].rstrip()
 
     truncated = last_test_output[-4000:] if len(last_test_output) > 4000 else last_test_output
 

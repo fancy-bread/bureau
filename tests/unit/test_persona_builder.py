@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,10 +23,11 @@ def _ai_write_file(path: str, tool_call_id: str = "tc1") -> AIMessage:
 def _tool_run_command(
     exit_code: int, stdout: str, stderr: str = "", tool_call_id: str = "tc2"
 ) -> ToolMessage:
-    return ToolMessage(
-        content=json.dumps({"exit_code": exit_code, "stdout": stdout, "stderr": stderr}),
-        tool_call_id=tool_call_id,
-    )
+    status = "succeeded" if exit_code == 0 else "failed"
+    marker = f"[Command {status} with exit code {exit_code}]"
+    body = (stdout + ("\n" + stderr if stderr else "")).rstrip()
+    content = f"{body}\n{marker}" if body else marker
+    return ToolMessage(content=content, tool_call_id=tool_call_id)
 
 
 def _fake_agent(agent_state: dict) -> MagicMock:
@@ -281,11 +281,9 @@ def test_progress_callback_skips_non_loggable_tool(capsys):
 
 
 def test_progress_callback_on_tool_end_emits_exit_code(capsys):
-    import json as _json
-
     cb = _ProgressCallback()
     cb.on_tool_end(
-        _json.dumps({"exit_code": 0, "stdout": "1 passed", "stderr": ""}),
+        "1 passed in 0.3s\n[Command succeeded with exit code 0]",
         run_id=_make_run_id(),
     )
     out = capsys.readouterr().out
@@ -293,7 +291,7 @@ def test_progress_callback_on_tool_end_emits_exit_code(capsys):
     assert "exit_code=0" in out
 
 
-def test_progress_callback_on_tool_end_ignores_non_json(capsys):
+def test_progress_callback_on_tool_end_ignores_non_execute_output(capsys):
     cb = _ProgressCallback()
-    cb.on_tool_end("plain string output", run_id=_make_run_id())
+    cb.on_tool_end("plain string output with no exit code marker", run_id=_make_run_id())
     assert capsys.readouterr().out == ""
