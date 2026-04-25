@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
 
 from langchain_core.messages import AIMessage, ToolMessage
@@ -36,11 +35,11 @@ def _make_agent(exit_code: int = 0, files: list[str] | None = None) -> MagicMock
                 tool_calls=[{"id": "tc1", "name": "write_file", "args": {"path": path, "content": "x"}}],
             )
         )
+    status = "succeeded" if exit_code == 0 else "failed"
+    body = "1 passed" if exit_code == 0 else "1 failed"
     messages.append(
         ToolMessage(
-            content=json.dumps(
-                {"exit_code": exit_code, "stdout": "1 passed" if exit_code == 0 else "", "stderr": ""}
-            ),
+            content=f"{body}\n[Command {status} with exit code {exit_code}]",
             tool_call_id="tc2",
         )
     )

@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import json
-import tempfile
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from deepagents import create_deep_agent
-from deepagents.backends.filesystem import FilesystemBackend
-from deepagents.middleware.memory import MemoryMiddleware
-from deepagents.middleware.skills import SkillsMiddleware
+from deepagents.backends.local_shell import LocalShellBackend
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from bureau import events
 from bureau.models import BuildAttempt
 
 _SYSTEM_TEMPLATE = """\
 You are Bureau's Builder persona. Implement the task plan by making code changes to \
 the target repo and running the test suite.
+
+## Target Repository
+Your working directory is: {repo_path}
+All file paths are relative to this directory. Do not read or write files outside it.
 
 ## Bureau Constitution
 {constitution}
@@ -28,16 +33,17 @@ the target repo and running the test suite.
 {task_plan_text}
 
 ## Instructions
-1. Read relevant files to understand the existing code.
+1. Start by listing files in {repo_path} to understand the project structure.
 2. Implement the tasks in dependency order.
 3. After making changes, run the test command to verify: `{test_cmd}`
-4. If tests fail, read the output, fix the issues, and run again.
+4. If tests fail, read the output carefully, fix the root cause, and run again.
 5. Stop when the test command exits with code 0.
 
 IMPORTANT:
 - Always provide complete file content when using write_file (no partial writes).
 - Run `{test_cmd}` after each significant set of changes.
 - Do not modify test files unless the task explicitly requires it.
+- Work only within {repo_path}; never explore the broader filesystem.
 """
 
 _RETRY_TEMPLATE = """\
@@ -52,6 +58,49 @@ Review the failure, fix the root cause, and run the tests again.
 
 _BUILDER_SKILL_DIRS = ("build", "test", "ship")
 
+_LOGGABLE_TOOLS = {"write_file", "read_file", "edit_file", "glob", "grep", "execute", "ls"}
+
+# deepagents execute tool returns plain text ending with this marker
+_EXIT_CODE_RE = re.compile(r"\[Command (?:succeeded|failed) with exit code (\d+)\]")
+
+
+def _parse_detail(input_str: str) -> str:
+    """Extract a single meaningful value from a tool's input_str for logging."""
+    try:
+        parsed = json.loads(input_str)
+        if isinstance(parsed, dict):
+            return str(
+                parsed.get("path")
+                or parsed.get("command")
+                or parsed.get("pattern")
+                or next(iter(parsed.values()), "")
+            )
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return input_str[:80] if input_str else ""
+
+
+class _ProgressCallback(BaseCallbackHandler):
+    def on_tool_start(
+        self, serialized: dict[str, Any], input_str: str, *, run_id: UUID, **kwargs: Any
+    ) -> None:
+        tool = serialized.get("name", "unknown")
+        if tool not in _LOGGABLE_TOOLS:
+            return
+        inputs: dict[str, Any] = kwargs.get("inputs") or {}
+        detail = (
+            inputs.get("path")
+            or inputs.get("command")
+            or inputs.get("pattern")
+            or _parse_detail(input_str)
+        )
+        events.emit(events.BUILDER_TOOL, tool=tool, detail=str(detail)[:120] if detail else "")
+
+    def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
+        match = _EXIT_CODE_RE.search(str(output))
+        if match:
+            events.emit(events.BUILDER_TOOL, tool="execute", exit_code=int(match.group(1)))
+
 
 def run_builder_attempt(
     spec_text: str,
@@ -64,7 +113,6 @@ def run_builder_attempt(
     attempt_num: int,
     previous_attempts: list[BuildAttempt],
     skills_root: Path | None = None,
-    plan_text: str = "",
     timeout: int = 300,
 ) -> BuildAttempt:
     now_str = datetime.now(timezone.utc).isoformat()
@@ -81,6 +129,7 @@ def run_builder_attempt(
         spec_text=spec_text,
         task_plan_text=task_plan_text,
         test_cmd=test_cmd,
+        repo_path=repo_path,
     )
 
     if previous_attempts:
@@ -88,34 +137,34 @@ def run_builder_attempt(
     else:
         user_content = "Begin implementation per the task plan."
 
-    middleware: list[Any] = []
-
-    if skills_root is not None:
-        sources = [str(skills_root / d) for d in _BUILDER_SKILL_DIRS]
-        middleware.append(
-            SkillsMiddleware(
-                backend=FilesystemBackend(root_dir=str(skills_root)),
-                sources=sources,
-            )
-        )
-
-    if plan_text:
-        context_dir = tempfile.mkdtemp()
-        Path(context_dir, "plan.md").write_text(plan_text, encoding="utf-8")
-        middleware.append(
-            MemoryMiddleware(
-                backend=FilesystemBackend(root_dir=context_dir),
-                sources=[context_dir],
-            )
-        )
+    skills = [str(skills_root / d) for d in _BUILDER_SKILL_DIRS] if skills_root is not None else None
 
     agent = create_deep_agent(
         model=model,
         system_prompt=system,
-        middleware=tuple(middleware),
+        backend=LocalShellBackend(root_dir=repo_path, virtual_mode=False, inherit_env=True),
+        skills=skills,
     )
 
-    result: dict[str, Any] = agent.invoke({"messages": [HumanMessage(content=user_content)]})
+    # Cap agent steps to prevent unbounded loops; deepagents defaults to 9999.
+    # At ~2-3s per API call, 120 steps ≈ 5-6 minutes, well within the timeout.
+    step_limit = max(20, timeout // 3)
+
+    try:
+        result: dict[str, Any] = agent.invoke(
+            {"messages": [HumanMessage(content=user_content)]},
+            config={"recursion_limit": step_limit, "callbacks": [_ProgressCallback()]},
+        )
+    except Exception as exc:
+        return BuildAttempt(
+            round=ralph_round,
+            attempt=attempt_num,
+            files_changed=[],
+            test_output=str(exc)[-4000:],
+            test_exit_code=-1,
+            passed=False,
+            timestamp=now_str,
+        )
 
     return _extract_build_attempt(result, ralph_round, attempt_num, now_str)
 
@@ -140,15 +189,11 @@ def _extract_build_attempt(
                         files_changed.append(path)
 
         if isinstance(msg, ToolMessage):
-            try:
-                parsed = json.loads(msg.content)
-            except (json.JSONDecodeError, TypeError):
-                continue
-            if isinstance(parsed, dict) and "exit_code" in parsed:
-                last_exit_code = parsed["exit_code"]
-                stdout = parsed.get("stdout", "")
-                stderr = parsed.get("stderr", "")
-                last_test_output = stdout + ("\n" + stderr if stderr else "")
+            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+            match = _EXIT_CODE_RE.search(content)
+            if match:
+                last_exit_code = int(match.group(1))
+                last_test_output = content[: match.start()].rstrip()
 
     truncated = last_test_output[-4000:] if len(last_test_output) > 4000 else last_test_output
 

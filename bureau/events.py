@@ -13,6 +13,7 @@ PHASE_COMPLETED = "phase.completed"
 RALPH_STARTED = "ralph.started"
 RALPH_ATTEMPT = "ralph.attempt"
 RALPH_COMPLETED = "ralph.completed"
+BUILDER_TOOL = "builder.tool"
 
 
 def emit(event: str, **kwargs: Any) -> None:
@@ -20,7 +21,7 @@ def emit(event: str, **kwargs: Any) -> None:
     parts = [f"[bureau] {event}"]
     for key, value in kwargs.items():
         parts.append(f"{key}={value}")
-    print("  ".join(parts[:1]) + ("  " + "  ".join(parts[1:]) if len(parts) > 1 else ""))
+    print("  ".join(parts[:1]) + ("  " + "  ".join(parts[1:]) if len(parts) > 1 else ""), flush=True)
 
 
 @contextmanager

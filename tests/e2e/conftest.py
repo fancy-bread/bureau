@@ -45,10 +45,38 @@ def bureau_exe() -> str:
     raise RuntimeError("bureau executable not found")
 
 
-def run_bureau(spec_path: str, repo_path: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
+def run_bureau(spec_path: str, repo_path: str, timeout: int = 600) -> subprocess.CompletedProcess:
+    """Run bureau and stream its output to the console while also capturing it for assertions."""
+    import io
+    import threading
+
+    proc = subprocess.Popen(
         [bureau_exe(), "run", spec_path, "--repo", repo_path],
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
-        timeout=600,
+    )
+
+    buf = io.StringIO()
+
+    def _stream() -> None:
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            print(line, end="", flush=True)
+            buf.write(line)
+
+    t = threading.Thread(target=_stream, daemon=True)
+    t.start()
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+    t.join()
+
+    captured = buf.getvalue()
+    return subprocess.CompletedProcess(
+        args=proc.args,
+        returncode=proc.returncode or 0,
+        stdout=captured,
+        stderr="",
     )

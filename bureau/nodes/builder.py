@@ -68,7 +68,6 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
                 attempt_num=attempt_num,
                 previous_attempts=round_attempts,
                 skills_root=skills_root,
-                plan_text=plan_text,
                 timeout=timeout,
             )
         except ValueError as exc:
@@ -76,12 +75,15 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
         round_attempts.append(attempt)
         existing_attempts.append(attempt.model_dump())
 
+        truncated_output = attempt.test_output[-500:].replace("\n", "\\n") if attempt.test_output else ""
         events.emit(
             events.RALPH_ATTEMPT,
             phase="builder",
             round=ralph_round,
             attempt=attempt_num,
             result="pass" if attempt.passed else "fail",
+            exit_code=attempt.test_exit_code,
+            output=truncated_output,
         )
 
         if attempt.passed:
