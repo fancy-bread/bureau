@@ -91,10 +91,12 @@ Implementation: `print(line, flush=True)` — matches the existing `flush=True` 
 ## `source` URI Format
 
 **Decision**: `urn:bureau:run:<run-id>` when no override is configured
-**Rationale**: URN format is valid per CloudEvents spec (URI reference). Encodes the run ID directly so consumers can correlate events to runs without parsing the `data` field. Simple and unambiguous.
-**Alternatives considered**: `https://bureau.local/<run-id>` — looks like an HTTP URL, implies a reachable endpoint that doesn't exist. `bureau://<run-id>` — custom scheme, less conventional than URN.
+**Rationale**: URN format is valid per CloudEvents spec (URI reference). Encodes the run ID directly so consumers can correlate events to runs without parsing the `data` field. Run IDs are UUID-based and globally unique, so the source URI is unique per run even with multiple concurrent bureau instances — no instance ID is needed for CloudEvents stdout output.
+**Alternatives considered**: `https://bureau.local/<run-id>` — looks like an HTTP URL, implies a reachable endpoint that doesn't exist. `bureau://<run-id>` — custom scheme, less conventional than URN. `urn:bureau:instance:<id>:run:<run-id>` — correct for Kafka partition routing but premature here; deferred to the Kafka spec where multi-instance topology matters.
 
 Override mechanism: `BUREAU_SOURCE_URI` environment variable. If set, used as-is for `source`. Allows organizations to use their own namespacing (e.g. `https://ci.myorg.com/bureau`).
+
+> **Deferred**: `BUREAU_INSTANCE_ID` — a future env var that would enrich `source` to `urn:bureau:instance:<instance-id>:run:<run-id>`. Introduced in the Kafka spec where consumers need to route or filter by producing instance.
 
 ---
 
