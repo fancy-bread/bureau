@@ -15,7 +15,7 @@
 
 **Purpose**: Add the `cloudevents` PyPI dependency
 
-- [ ] T001 Add `cloudevents>=1.11` to `[project.dependencies]` in `pyproject.toml` and run `pip install -e ".[dev]"` to verify it resolves
+- [X] T001 Add `cloudevents>=1.11` to `[project.dependencies]` in `pyproject.toml` and run `pip install -e ".[dev]"` to verify it resolves
 
 ---
 
@@ -25,9 +25,9 @@
 
 **⚠️ CRITICAL**: US1, US2, and US3 all depend on this phase completing first.
 
-- [ ] T002 Add `OutputFormat` enum (`TEXT = "text"`, `CLOUDEVENTS = "cloudevents"`) and module-level `_FORMAT` constant resolved once from `os.environ.get("BUREAU_OUTPUT_FORMAT", "text")` in `bureau/events.py`
-- [ ] T003 Add module-level `_source_uri: str` defaulting to `os.environ.get("BUREAU_SOURCE_URI", "urn:bureau:run:unknown")` and `_register_run(run_id: str)` function that updates `_source_uri` to `urn:bureau:run:<run-id>` when `BUREAU_SOURCE_URI` is not set in `bureau/events.py`
-- [ ] T004 Add `is_cloudevents_mode() -> bool` public function returning `_FORMAT == OutputFormat.CLOUDEVENTS` in `bureau/events.py`
+- [X] T002 Add `OutputFormat` enum (`TEXT = "text"`, `CLOUDEVENTS = "cloudevents"`) and module-level `_FORMAT` constant resolved once from `os.environ.get("BUREAU_OUTPUT_FORMAT", "text")` in `bureau/events.py`
+- [X] T003 Add module-level `_source_uri: str` defaulting to `os.environ.get("BUREAU_SOURCE_URI", "urn:bureau:run:unknown")` and `_register_run(run_id: str)` function that updates `_source_uri` to `urn:bureau:run:<run-id>` when `BUREAU_SOURCE_URI` is not set in `bureau/events.py`
+- [X] T004 Add `is_cloudevents_mode() -> bool` public function returning `_FORMAT == OutputFormat.CLOUDEVENTS` in `bureau/events.py`
 
 **Checkpoint**: `OutputFormat`, `_FORMAT`, `_source_uri`, `_register_run()`, and `is_cloudevents_mode()` all present and importable. Existing `emit()` and `phase()` signatures unchanged.
 
@@ -39,9 +39,9 @@
 
 **Independent Test**: Set `BUREAU_OUTPUT_FORMAT=cloudevents`, run `bureau run <spec> --repo <repo>` against the test repo, parse each stdout line as JSON, and validate CloudEvents attributes (`specversion`, `id`, `source`, `type`, `time`, `datacontenttype`, `data`) are present and well-formed.
 
-- [ ] T005 [US1] Implement `_emit_cloudevents(event: str, **kwargs: Any) -> None` in `bureau/events.py` using `cloudevents.http.CloudEvent` and `cloudevents.conversion.to_json` — builds envelope with `type=f"io.bureau.{event}"`, `source=_source_uri`, UUID v4 `id`, RFC 3339 `time`, `datacontenttype="application/json"`, `data=kwargs or {}`, then calls `_register_run(kwargs["id"])` when event is `run.started`
-- [ ] T006 [US1] Update `emit()` in `bureau/events.py` to branch on `_FORMAT`: when `OutputFormat.CLOUDEVENTS` call `_emit_cloudevents(event, **kwargs)`; when `OutputFormat.TEXT` execute existing `[bureau] event  k=v` print (no change to text path)
-- [ ] T007 [US1] Add CloudEvents mode unit tests to `tests/unit/test_events.py`: set `BUREAU_OUTPUT_FORMAT=cloudevents` via monkeypatch, call `emit()` for each of the 10 event types, parse stdout as JSON, assert `specversion=="1.0"`, `type==f"io.bureau.{event}"`, `source` contains run ID after `run.started`, `datacontenttype=="application/json"`, `data` is a dict
+- [X] T005 [US1] Implement `_emit_cloudevents(event: str, **kwargs: Any) -> None` in `bureau/events.py` using `cloudevents.http.CloudEvent` and `cloudevents.conversion.to_json` — builds envelope with `type=f"io.bureau.{event}"`, `source=_source_uri`, UUID v4 `id`, RFC 3339 `time`, `datacontenttype="application/json"`, `data=kwargs or {}`, then calls `_register_run(kwargs["id"])` when event is `run.started`
+- [X] T006 [US1] Update `emit()` in `bureau/events.py` to branch on `_FORMAT`: when `OutputFormat.CLOUDEVENTS` call `_emit_cloudevents(event, **kwargs)`; when `OutputFormat.TEXT` execute existing `[bureau] event  k=v` print (no change to text path)
+- [X] T007 [US1] Add CloudEvents mode unit tests to `tests/unit/test_events.py`: set `BUREAU_OUTPUT_FORMAT=cloudevents` via monkeypatch, call `emit()` for each of the 10 event types, parse stdout as JSON, assert `specversion=="1.0"`, `type==f"io.bureau.{event}"`, `source` contains run ID after `run.started`, `datacontenttype=="application/json"`, `data` is a dict
 
 **Checkpoint**: `BUREAU_OUTPUT_FORMAT=cloudevents pytest tests/unit/test_events.py` passes. Each tested emit call produces valid JSON on one line.
 
@@ -53,8 +53,8 @@
 
 **Independent Test**: Run `make ci` with no `BUREAU_OUTPUT_FORMAT` set. All 110 existing unit/integration tests pass. Run the existing e2e test suite in default mode — all assertions against `[bureau]` prefixed lines still match.
 
-- [ ] T008 [P] [US2] Add text-mode regression unit tests to `tests/unit/test_events.py`: with no `BUREAU_OUTPUT_FORMAT` set (or set to `"text"`), assert `emit("run.started", id="run-abc", spec="/s", repo="/r")` produces exactly `[bureau] run.started  id=run-abc  spec=/s  repo=/r\n` — pin the byte-exact format for each structurally distinct event shape
-- [ ] T009 [P] [US2] Add unit test to `tests/unit/test_events.py` asserting `is_cloudevents_mode()` returns `False` when `BUREAU_OUTPUT_FORMAT` is unset and `True` when set to `"cloudevents"`, and that an invalid value (e.g. `"xml"`) raises `ValueError` at import time
+- [X] T008 [P] [US2] Add text-mode regression unit tests to `tests/unit/test_events.py`: with no `BUREAU_OUTPUT_FORMAT` set (or set to `"text"`), assert `emit("run.started", id="run-abc", spec="/s", repo="/r")` produces exactly `[bureau] run.started  id=run-abc  spec=/s  repo=/r\n` — pin the byte-exact format for each structurally distinct event shape
+- [X] T009 [P] [US2] Add unit test to `tests/unit/test_events.py` asserting `is_cloudevents_mode()` returns `False` when `BUREAU_OUTPUT_FORMAT` is unset and `True` when set to `"cloudevents"`, and that an invalid value (e.g. `"xml"`) raises `ValueError` at import time
 
 **Checkpoint**: `make ci` passes with all 110+ tests green. Text output is byte-identical to pre-feature output.
 
@@ -66,9 +66,9 @@
 
 **Independent Test**: Trigger an escalation with `BUREAU_OUTPUT_FORMAT=cloudevents`. Parse the `run.escalated` JSON line — verify `data.reason`, `data.what_happened`, and `data.what_is_needed` are present. Verify no non-JSON lines appear on stdout after `run.escalated`.
 
-- [ ] T010 [US3] Update `escalate_node` in `bureau/nodes/escalate.py` to pass `what_happened=esc.what_happened[:1000]` and `what_is_needed=esc.what_is_needed` as kwargs to `events.emit(events.RUN_ESCALATED, id=run_id, phase=esc.phase, reason=esc.reason, ...)` (fields were previously only in raw print lines)
-- [ ] T011 [US3] Wrap the raw `print()` block in `escalate_node` (the `What happened:` / `What's needed:` / `Options:` / `Resume:` lines) in `if not events.is_cloudevents_mode():` in `bureau/nodes/escalate.py`
-- [ ] T012 [US3] Add escalation CloudEvents tests to `tests/integration/test_escalate_node.py`: in CloudEvents mode assert `run.escalated` JSON `data` contains `what_happened` and `what_is_needed`; in text mode assert the raw print lines still appear and the `run.escalated` event line does not contain `what_happened`
+- [X] T010 [US3] Update `escalate_node` in `bureau/nodes/escalate.py` to pass `what_happened=esc.what_happened[:1000]` and `what_is_needed=esc.what_is_needed` as kwargs to `events.emit(events.RUN_ESCALATED, id=run_id, phase=esc.phase, reason=esc.reason, ...)` (fields were previously only in raw print lines)
+- [X] T011 [US3] Wrap the raw `print()` block in `escalate_node` (the `What happened:` / `What's needed:` / `Options:` / `Resume:` lines) in `if not events.is_cloudevents_mode():` in `bureau/nodes/escalate.py`
+- [X] T012 [US3] Add escalation CloudEvents tests to `tests/integration/test_escalate_node.py`: in CloudEvents mode assert `run.escalated` JSON `data` contains `what_happened` and `what_is_needed`; in text mode assert the raw print lines still appear and the `run.escalated` event line does not contain `what_happened`
 
 **Checkpoint**: Escalation in CloudEvents mode produces a single structured `run.escalated` JSON line with all fields. Escalation in text mode is byte-identical to pre-feature behavior.
 
@@ -76,8 +76,8 @@
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T013 [P] Run `make ci` and verify coverage remains ≥ 80%; if `bureau/events.py` drops below threshold add targeted unit tests to `tests/unit/test_events.py` for any uncovered branches (e.g. `_register_run` override guard, `OutputFormat` fallback)
-- [ ] T014 [P] Update `## Active Technologies` in `CLAUDE.md` to add `cloudevents>=1.11` (new dep for CloudEvents envelope construction, 009-cloudevents-format)
+- [X] T013 [P] Run `make ci` and verify coverage remains ≥ 80%; if `bureau/events.py` drops below threshold add targeted unit tests to `tests/unit/test_events.py` for any uncovered branches (e.g. `_register_run` override guard, `OutputFormat` fallback)
+- [X] T014 [P] Update `## Active Technologies` in `CLAUDE.md` to add `cloudevents>=1.11` (new dep for CloudEvents envelope construction, 009-cloudevents-format)
 
 ---
 

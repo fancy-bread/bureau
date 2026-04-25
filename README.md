@@ -15,6 +15,12 @@ Bureau is the autonomous runtime for [ASDLC](https://asdlc.io). You hand it an a
 [bureau] run.completed  pr=https://github.com/org/repo/pull/42  duration=6m01s
 ```
 
+Set `BUREAU_OUTPUT_FORMAT=cloudevents` to emit [CloudEvents 1.0](https://cloudevents.io) NDJSON instead — one JSON object per line, parseable by any structured log consumer:
+
+```json
+{"specversion":"1.0","id":"8b67eaba...","source":"urn:bureau:run:run-a3f9c2b1","type":"io.bureau.run.started","time":"2026-04-25T14:32:00.123Z","datacontenttype":"application/json","data":{"id":"run-a3f9c2b1","spec":"specs/002-auth/spec.md","repo":"./"}}
+```
+
 ---
 
 ## How it works
@@ -42,6 +48,7 @@ If any phase cannot proceed, bureau emits a structured escalation and pauses. Yo
 - **[Anthropic API](https://docs.anthropic.com)** — Claude powers the builder and reviewer personas
 - **[deepagents](https://github.com/deepagents/deepagents)** — skills middleware for the Builder; SKILL.md files from `bureau/skills/addyosmani/` are bundled in the package and loaded at Builder initialisation
 - **Vendored skills** — four ASDLC skills sourced from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) v0.5.0 (MIT); see `NOTICE`
+- **[cloudevents](https://pypi.org/project/cloudevents/)** — CloudEvents 1.0 envelope construction for structured NDJSON output (`BUREAU_OUTPUT_FORMAT=cloudevents`)
 
 ---
 
@@ -155,6 +162,23 @@ bureau abort <run-id>              # cancel a run
 
 ---
 
+## Structured output
+
+Bureau emits one event per line to stdout. The format is controlled by `BUREAU_OUTPUT_FORMAT`:
+
+| Value | Format | Default |
+|-------|--------|---------|
+| `text` (default) | `[bureau] event  key=value  key=value` | ✅ |
+| `cloudevents` | CloudEvents 1.0 NDJSON | — |
+
+CloudEvents mode produces spec-compliant envelopes with `specversion`, `id`, `source` (`urn:bureau:run:<run-id>`), `type` (`io.bureau.<event>`), `time`, `datacontenttype`, and `data`. Every event type in bureau's schema is supported.
+
+Both variables are set the same way as `ANTHROPIC_API_KEY` — in `~/.bureau/.env` for persistent local config, or as shell/CI environment variables for per-invocation control. See `bureau/data/env.example` for the full list.
+
+Text mode is the default and is byte-identical to previous releases — existing consumers are unaffected.
+
+---
+
 ## Escalations
 
 When bureau cannot proceed — ambiguous spec, missing contract, failing tests after N retries — it pauses and tells you exactly what it needs:
@@ -243,4 +267,5 @@ Bureau is in active development. The current release implements the CLI foundati
 | Builder persona (deepagents + skills middleware) | ✅ |
 | Reviewer persona (five-axis quality framework) | ✅ |
 | PR creation | ✅ |
+| CloudEvents 1.0 NDJSON output (`BUREAU_OUTPUT_FORMAT=cloudevents`) | ✅ |
 

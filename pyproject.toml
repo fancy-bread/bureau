@@ -15,6 +15,7 @@ dependencies = [
     "anthropic>=0.25",
     "python-dotenv>=1.0",
     "deepagents>=0.5.3",
+    "cloudevents>=1.11",
 ]
 
 [project.scripts]
