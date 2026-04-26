@@ -12,10 +12,21 @@ pytest.importorskip("confluent_kafka")
 
 @pytest.fixture(scope="module")
 def redpanda():
+    from confluent_kafka.admin import AdminClient
     from testcontainers.kafka import RedpandaContainer
 
     with RedpandaContainer() as container:
-        time.sleep(1)  # let broker finish initialising before first producer connects
+        bootstrap = container.get_bootstrap_server()
+        # Poll until the broker accepts connections (up to 30s)
+        admin = AdminClient({"bootstrap.servers": bootstrap, "socket.timeout.ms": "2000"})
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            try:
+                admin.list_topics(timeout=2)
+                break
+            except Exception:
+                time.sleep(0.5)
+        admin.poll(0)
         yield container
 
 
@@ -72,7 +83,8 @@ def test_publish_produces_valid_cloudevents_envelope(monkeypatch, redpanda):
 
     assert mod.is_kafka_enabled()
     mod.publish("run.started", "run-int-001", id="run-int-001", spec="specs/test/spec.md")
-    mod._producer.flush(timeout=10)
+    unflushed = mod._producer.flush(timeout=15)
+    assert unflushed == 0, f"{unflushed} message(s) still in queue after flush"
 
     envelope = _consume_matching(
         bootstrap, "bureau.runs", group_id="grp-us1-default", run_id="run-int-001"
@@ -111,7 +123,8 @@ def test_instance_id_env_appears_in_source(monkeypatch, redpanda):
     mod = _reload_publisher(monkeypatch, bootstrap, BUREAU_INSTANCE_ID="ci-worker-7")
 
     mod.publish("run.started", "run-int-003", id="run-int-003")
-    mod._producer.flush(timeout=10)
+    unflushed = mod._producer.flush(timeout=15)
+    assert unflushed == 0, f"{unflushed} message(s) still in queue after flush"
 
     envelope = _consume_matching(
         bootstrap, "bureau.runs", group_id="grp-us3-instance", run_id="run-int-003"

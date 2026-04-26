@@ -22,7 +22,7 @@ def _init() -> None:
         return
     from confluent_kafka import Producer  # type: ignore[import-untyped]
 
-    _producer = Producer({"bootstrap.servers": servers, "acks": "0"})
+    _producer = Producer({"bootstrap.servers": servers, "acks": "1", "retries": "0"})
 
 
 def _flush() -> None:
