@@ -49,6 +49,7 @@ If any phase cannot proceed, bureau emits a structured escalation and pauses. Yo
 - **[deepagents](https://github.com/deepagents/deepagents)** — skills middleware for the Builder; SKILL.md files from `bureau/skills/addyosmani/` are bundled in the package and loaded at Builder initialisation
 - **Vendored skills** — four ASDLC skills sourced from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) v0.5.0 (MIT); see `NOTICE`
 - **[cloudevents](https://pypi.org/project/cloudevents/)** — CloudEvents 1.0 envelope construction for structured NDJSON output (`BUREAU_OUTPUT_FORMAT=cloudevents`)
+- **[confluent-kafka](https://pypi.org/project/confluent-kafka/)** — opt-in Kafka publisher; fires CloudEvents envelopes to a topic when `BUREAU_KAFKA_BOOTSTRAP_SERVERS` is set
 
 ---
 
@@ -177,6 +178,27 @@ Both variables are set the same way as `ANTHROPIC_API_KEY` — in `~/.bureau/.en
 
 Text mode is the default and is byte-identical to previous releases — existing consumers are unaffected.
 
+### Kafka publishing (opt-in)
+
+Set `BUREAU_KAFKA_BOOTSTRAP_SERVERS` to publish every bureau event to a Kafka topic as a CloudEvents 1.0 JSON message — independent of `BUREAU_OUTPUT_FORMAT`. When the variable is unset, no Kafka code runs.
+
+```sh
+# Start / stop local Redpanda (Kafka-compatible, single container)
+make bureau-kafka-up
+make bureau-kafka-down
+
+# Consume events
+BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 bureau run specs/my-feature/spec.md
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BUREAU_KAFKA_BOOTSTRAP_SERVERS` | (unset = disabled) | Comma-separated broker addresses |
+| `BUREAU_KAFKA_TOPIC` | `bureau.runs` | Target topic |
+| `BUREAU_INSTANCE_ID` | UUID generated at startup | Stable per-process identity in `source` URI |
+
+Kafka publishing is best-effort (`acks=0`). Broker failures are caught and logged to stderr; they never affect the run outcome or exit code.
+
 ---
 
 ## Escalations
@@ -268,4 +290,5 @@ Bureau is in active development. The current release implements the CLI foundati
 | Reviewer persona (five-axis quality framework) | ✅ |
 | PR creation | ✅ |
 | CloudEvents 1.0 NDJSON output (`BUREAU_OUTPUT_FORMAT=cloudevents`) | ✅ |
+| Kafka event publishing (`BUREAU_KAFKA_BOOTSTRAP_SERVERS`) | ✅ |
 

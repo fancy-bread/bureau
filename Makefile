@@ -1,4 +1,4 @@
-.PHONY: ci lint test test-cov test-e2e
+.PHONY: ci lint test test-cov test-e2e bureau-kafka-up bureau-kafka-down test-kafka-smoke
 
 ci: lint test
 
@@ -13,3 +13,16 @@ test-cov:
 
 test-e2e:
 	pytest tests/e2e -v
+
+bureau-kafka-up:
+	docker run -d -p 9092:9092 --name bureau-kafka \
+		redpandadata/redpanda:latest \
+		redpanda start --smp 1 --overprovisioned
+
+bureau-kafka-down:
+	docker stop bureau-kafka && docker rm bureau-kafka
+
+test-kafka-smoke:
+	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
+		bureau run ../bureau-test-python/specs/001-smoke-hello-world/spec.md \
+		--repo ../bureau-test-python

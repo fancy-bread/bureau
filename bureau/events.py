@@ -62,11 +62,17 @@ def _emit_cloudevents(event: str, **kwargs: Any) -> None:
 def emit(event: str, **kwargs: Any) -> None:
     if _FORMAT == OutputFormat.CLOUDEVENTS:
         _emit_cloudevents(event, **kwargs)
-        return
-    parts = [f"[bureau] {event}"]
-    for key, value in kwargs.items():
-        parts.append(f"{key}={value}")
-    print("  ".join(parts[:1]) + ("  " + "  ".join(parts[1:]) if len(parts) > 1 else ""), flush=True)
+    else:
+        parts = [f"[bureau] {event}"]
+        for key, value in kwargs.items():
+            parts.append(f"{key}={value}")
+        print("  ".join(parts[:1]) + ("  " + "  ".join(parts[1:]) if len(parts) > 1 else ""), flush=True)
+
+    from bureau import kafka_publisher
+
+    if kafka_publisher.is_kafka_enabled():
+        run_id = kwargs.get("id", "unknown")
+        kafka_publisher.publish(event, str(run_id), **kwargs)
 
 
 @contextmanager
