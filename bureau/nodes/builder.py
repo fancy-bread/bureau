@@ -8,9 +8,10 @@ from typing import Any
 from bureau import events
 from bureau.config import load_constitution
 from bureau.memory import Memory
-from bureau.models import BuildAttempt, TaskPlan
+from bureau.models import BuildAttempt, PipelinePhase, TaskPlan
 from bureau.personas.builder import run_builder_attempt
 from bureau.state import Escalation, EscalationReason, Phase
+from bureau.tools.pipeline import run_pipeline
 from bureau.tools.shell_tools import execute_shell_tool
 
 _SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "addyosmani"
@@ -29,6 +30,8 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     max_attempts = repo_context.max_builder_attempts if repo_context else 3
     test_cmd = repo_context.test_cmd if repo_context else "pytest"
     install_cmd = repo_context.install_cmd if repo_context else ""
+    lint_cmd = repo_context.lint_cmd if repo_context else ""
+    build_cmd = repo_context.build_cmd if repo_context else ""
     model = repo_context.builder_model if repo_context else "claude-sonnet-4-6"
     timeout = repo_context.command_timeout if repo_context else 300
 
@@ -54,8 +57,24 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     existing_attempts: list[dict] = list(state.get("build_attempts", []))
     round_attempts: list[BuildAttempt] = []
 
+    _gate_phases = [
+        (PipelinePhase.LINT, lint_cmd),
+        (PipelinePhase.BUILD, build_cmd),
+    ]
+    active_gates = [(p, cmd) for p, cmd in _gate_phases if cmd.strip()]
+
     passed = False
     for attempt_num in range(max_attempts):
+        if active_gates:
+            gate_result = run_pipeline(repo_path, active_gates, timeout)
+            if not gate_result.passed:
+                phase_name = gate_result.failed_phase.value
+                return _escalate(
+                    state,
+                    f"{phase_name} gate failed (exit non-zero): {gate_result.failed_output}",
+                    EscalationReason.RALPH_EXHAUSTED,
+                )
+
         try:
             attempt = run_builder_attempt(
                 spec_text=spec_text,

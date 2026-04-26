@@ -1,6 +1,23 @@
 from __future__ import annotations
 
+from enum import StrEnum
+from typing import Optional
+
 from pydantic import BaseModel
+
+
+class PipelinePhase(StrEnum):
+    INSTALL = "install"
+    LINT = "lint"
+    BUILD = "build"
+    TEST = "test"
+
+
+class PipelineResult(BaseModel):
+    passed: bool
+    failed_phase: Optional[PipelinePhase] = None
+    failed_output: str = ""
+    phases_run: list[PipelinePhase] = []
 
 
 class Task(BaseModel):
