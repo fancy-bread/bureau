@@ -8,7 +8,7 @@
 
 ### User Story 1 — Builder Runs Full Pipeline as Sequential Gates (Priority: P1)
 
-A developer has configured `lint_cmd` and `build_cmd` in `.bureau/config.toml`. When bureau runs, the builder executes all four command phases in order — prepare, lint, build, test — before each attempt. If lint fails, the builder reports which phase failed and escalates rather than proceeding to a broken build or test run.
+A developer has configured `lint_cmd` and `build_cmd` in `.bureau/config.toml`. When bureau runs, the builder executes all four command phases in order — install, lint, build, test — before each attempt. If lint fails, the builder reports which phase failed and escalates rather than proceeding to a broken build or test run.
 
 **Why this priority**: The pipeline gates exist in the config today but are silently ignored. A lint failure that would be caught immediately is instead masked by a test run that may pass on broken code. Enforcing the full sequence closes this gap and makes build failures actionable.
 
@@ -19,7 +19,7 @@ A developer has configured `lint_cmd` and `build_cmd` in `.bureau/config.toml`. 
 1. **Given** a repo with `lint_cmd = "ruff check ."` and a linting violation, **When** bureau runs, **Then** the builder stops at the lint gate, reports which phase failed, and does not run the test suite
 2. **Given** a repo with `build_cmd = "tsc --noEmit"` and a type error, **When** bureau runs, **Then** the builder stops at the build gate and escalates with the build phase identified
 3. **Given** a repo where all four phases pass, **When** bureau runs, **Then** the full pipeline completes in order and the attempt is recorded as passing
-4. **Given** `lint_cmd` and `build_cmd` are empty strings, **When** bureau runs, **Then** those phases are skipped and the pipeline proceeds with prepare → test only
+4. **Given** `lint_cmd` and `build_cmd` are empty strings, **When** bureau runs, **Then** those phases are skipped and the pipeline proceeds with install → test only
 
 ---
 
@@ -69,11 +69,11 @@ The reviewer reads the actual implementation and test files written by the build
 
 ### Functional Requirements
 
-- **FR-001**: The builder MUST execute command phases in strict order: prepare (`install_cmd`) → lint (`lint_cmd`) → build (`build_cmd`) → test (`test_cmd`)
+- **FR-001**: The builder MUST execute command phases in strict order: install (`install_cmd`) → lint (`lint_cmd`) → build (`build_cmd`) → test (`test_cmd`)
 - **FR-002**: The builder MUST skip any phase whose configured command is an empty string
 - **FR-003**: The builder MUST stop at the first failing phase and NOT proceed to subsequent phases
 - **FR-004**: The builder's escalation MUST identify which pipeline phase failed and include the command output from that phase
-- **FR-005**: The reviewer MUST independently execute the full pipeline (prepare → lint → build → test, skipping empty phases) without relying on the builder's reported output
+- **FR-005**: The reviewer MUST independently execute the full pipeline (install → lint → build → test, skipping empty phases) without relying on the builder's reported output
 - **FR-006**: The reviewer MUST read the contents of all files listed in the builder's `files_changed` from the memory scratchpad
 - **FR-007**: The reviewer MUST apply a test quality gate: any test file that contains no assertions (`assert` statements or assertion method calls) MUST result in a `revise` verdict with a finding identifying the non-asserting test
 - **FR-008**: The reviewer MUST evaluate each functional requirement in the spec against the actual implementation file contents and record a finding (met/unmet) for each
@@ -82,7 +82,7 @@ The reviewer reads the actual implementation and test files written by the build
 
 ### Key Entities
 
-- **Pipeline Phase**: One of four ordered steps (prepare, lint, build, test); each has a configured command and a pass/fail result
+- **Pipeline Phase**: One of four ordered steps (install, lint, build, test); each has a configured command and a pass/fail result
 - **Pipeline Result**: Outcome of executing all phases in sequence; includes which phase failed (if any) and its output
 - **Test Quality Finding**: A reviewer finding that identifies a specific test file or function as non-asserting, with remediation guidance
 
@@ -99,7 +99,7 @@ The reviewer reads the actual implementation and test files written by the build
 ## Assumptions
 
 - The target repo is in a lint-clean state before bureau runs; pre-existing lint violations will block the builder at the lint gate regardless of whether the builder introduced them
-- `install_cmd` (prepare phase) is run once per ralph round, not once per pipeline phase — this matches current behaviour and is unchanged
+- `install_cmd` (install phase) is run once per ralph round, not once per pipeline phase — this matches current behaviour and is unchanged
 - The reviewer reads files from the memory scratchpad written by the builder node; files not listed in `files_changed` are not read
 - Test quality is assessed by the presence of assertion statements — the reviewer does not execute static analysis tools to evaluate test quality
 - Both builder and reviewer share the same `command_timeout` for all pipeline phases; per-phase timeouts are out of scope
