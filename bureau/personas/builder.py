@@ -186,8 +186,9 @@ def _extract_build_attempt(
     for msg in messages:
         if isinstance(msg, AIMessage) and msg.tool_calls:
             for call in msg.tool_calls:
-                if call.get("name") == "write_file":
-                    path = call.get("args", {}).get("path", "")
+                if call.get("name") in ("write_file", "edit_file"):
+                    args = call.get("args", {})
+                    path = args.get("file_path") or args.get("path", "")
                     if path and path not in files_changed:
                         files_changed.append(path)
 

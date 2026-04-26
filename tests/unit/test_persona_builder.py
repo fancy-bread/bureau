@@ -108,6 +108,32 @@ def test_extract_no_commands_returns_exit_minus_one():
     assert result.passed is False
 
 
+def test_extract_collects_files_using_file_path_key():
+    """deepagents write_file uses 'file_path', not 'path'."""
+    msg = AIMessage(
+        content="",
+        tool_calls=[
+            {"id": "tc1", "name": "write_file", "args": {"file_path": "src/greeting.py", "content": "x"}}
+        ],
+    )
+    state = _make_agent_state([msg, _tool_run_command(0, "1 passed", tool_call_id="tc2")])
+    result = _extract_build_attempt(state, ralph_round=0, attempt_num=0, timestamp="ts")
+    assert "src/greeting.py" in result.files_changed
+
+
+def test_extract_collects_edited_files():
+    """edit_file calls also populate files_changed."""
+    msg = AIMessage(
+        content="",
+        tool_calls=[
+            {"id": "tc1", "name": "edit_file", "args": {"file_path": "src/foo.py", "new_str": "b"}}
+        ],
+    )
+    state = _make_agent_state([msg, _tool_run_command(0, "ok", tool_call_id="tc2")])
+    result = _extract_build_attempt(state, ralph_round=0, attempt_num=0, timestamp="ts")
+    assert "src/foo.py" in result.files_changed
+
+
 # --- run_builder_attempt integration tests ---
 
 
