@@ -96,10 +96,6 @@ def test_smoke_hello_world(bureau_test_repo):
 
 
 @pytest.mark.timeout(350)
-@pytest.mark.xfail(
-    strict=False,
-    reason="Planner may complete spec 004 instead of escalating — AI behaviour is non-deterministic",
-)
 def test_escalation_missing_artifact(bureau_test_repo):
     spec_path = str(Path(bureau_test_repo) / "specs" / "004-escalation-missing-schema" / "spec.md")
     result = run_bureau(spec_path, bureau_test_repo, timeout=300)
