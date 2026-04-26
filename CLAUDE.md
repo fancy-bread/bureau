@@ -96,6 +96,7 @@ is mandatory. When editing extensions.yml, `optional: false` + `condition: null`
 - Python 3.14 (no code changes) + None new — file replacement only (008-enrich-skills)
 - `bureau/skills/addyosmani/{build,test,ship,review}/SKILL.md` (tracked in git); skills sourced from addyosmani/agent-skills@0.5.0 with attribution frontmatter (008-enrich-skills)
 - `cloudevents>=1.11` (new dep for CloudEvents envelope construction, 009-cloudevents-format); `OutputFormat` enum + `BUREAU_OUTPUT_FORMAT` env var selects text (default) vs CloudEvents NDJSON mode; `cloudevents.v1.http.CloudEvent` + `cloudevents.v1.conversion.to_json` for envelope serialization
+- Python 3.14 + `confluent-kafka>=2.3` (new), `testcontainers[kafka]` (dev dep); `bureau/kafka_publisher.py` module-level singleton producer; `BUREAU_KAFKA_BOOTSTRAP_SERVERS` opt-in; `BUREAU_KAFKA_TOPIC` (default `bureau.runs`); `BUREAU_INSTANCE_ID` (default UUID); fire-and-forget `acks=0`; Redpanda container for integration tests (010-kafka-publisher)
 
 ## Recent Changes
 - 007-deepagents-verifier-skills: deepagents>=0.5.3 added; Builder replaced with `create_deep_agent` adapter + `_extract_build_attempt()` state bridge; Critic renamed to Reviewer throughout (Phase, models, nodes, personas, tests, constitution v1.2.0); ASDLC skills vendored to `bureau/skills/addyosmani/{build,test,ship,review}/`; Builder wired with build/test/ship skills + MemoryMiddleware; Reviewer wired with review skill pre-flight check

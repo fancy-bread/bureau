@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import shutil
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -97,6 +99,57 @@ def resume_run(run_id: str, response: str = "") -> RunRecord:
     record.status = RunStatus.RUNNING
     write_run_record(record)
     return record
+
+
+@dataclass
+class PruneResult:
+    run_id: str
+    reason: str
+    deleted: bool
+
+
+def prune_runs(
+    *,
+    dry_run: bool = True,
+    older_than_days: Optional[int] = None,
+    status_filter: Optional[str] = None,
+    missing_spec: bool = False,
+) -> list[PruneResult]:
+    """Delete run directories matching the given criteria. Returns one PruneResult per candidate."""
+    results: list[PruneResult] = []
+    now = datetime.now(timezone.utc)
+
+    for record in list_runs():
+        reasons: list[str] = []
+
+        if status_filter and record.status != status_filter:
+            continue
+
+        if missing_spec and not Path(record.spec_path).exists():
+            reasons.append("spec path no longer exists")
+
+        if older_than_days is not None:
+            try:
+                updated = datetime.fromisoformat(record.updated_at)
+                age_days = (now - updated).days
+                if age_days >= older_than_days:
+                    reasons.append(f"last updated {age_days}d ago")
+            except (ValueError, TypeError):
+                pass
+
+        if not reasons:
+            continue
+
+        deleted = False
+        if not dry_run:
+            run_path = _run_dir(record.run_id)
+            if run_path.exists():
+                shutil.rmtree(run_path)
+                deleted = True
+
+        results.append(PruneResult(run_id=record.run_id, reason="; ".join(reasons), deleted=deleted))
+
+    return results
 
 
 def init_repo(repo_path: str) -> str:

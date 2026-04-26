@@ -16,6 +16,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "deepagents>=0.5.3",
     "cloudevents>=1.11",
+    "confluent-kafka>=2.3",
 ]
 
 [project.scripts]
@@ -33,6 +34,7 @@ dev = [
     "pytest-cov",
     "pytest-timeout>=2.3",
     "ruff>=0.9",
+    "testcontainers[kafka]",
 ]
 
 [tool.pytest.ini_options]

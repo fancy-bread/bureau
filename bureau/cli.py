@@ -18,6 +18,7 @@ from bureau.run_manager import (
     get_run,
     init_repo,
     list_runs,
+    prune_runs,
     resume_run,
     write_run_record,
 )
@@ -72,8 +73,11 @@ def run(
 
     compiled = build_graph(run_id, bureau_config)
     initial_state = make_initial_state(
-        run_id, str(spec_path), repo_path,
-        spec_folder=str(spec_folder), tasks_path=str(tasks_path),
+        run_id,
+        str(spec_path),
+        repo_path,
+        spec_folder=str(spec_folder),
+        tasks_path=str(tasks_path),
     )
     thread_config = {"configurable": {"thread_id": run_id}}
 
@@ -180,6 +184,38 @@ def abort(run_id: str = typer.Argument(..., help="Run ID to abort")) -> None:
     except RunNotFoundError as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1)
+
+
+@app.command()
+def prune(
+    dry_run: bool = typer.Option(True, help="Print candidates without deleting (default: on)"),
+    older_than: Optional[int] = typer.Option(None, help="Delete runs last updated more than N days ago"),
+    status: Optional[str] = typer.Option(None, help="Restrict to runs with this status"),
+    missing_spec: bool = typer.Option(False, help="Delete runs whose spec file no longer exists"),
+) -> None:
+    """Remove old run directories from ~/.bureau/runs/."""
+    if older_than is None and not missing_spec:
+        typer.echo("No filter specified — pass --older-than N and/or --missing-spec.", err=True)
+        raise typer.Exit(1)
+
+    results = prune_runs(
+        dry_run=dry_run,
+        older_than_days=older_than,
+        status_filter=status,
+        missing_spec=missing_spec,
+    )
+
+    if not results:
+        typer.echo("No runs matched the given criteria.")
+        return
+
+    label = "[dry-run] would delete" if dry_run else "deleted"
+    for r in results:
+        typer.echo(f"{label}  {r.run_id}  ({r.reason})")
+
+    typer.echo(f"\n{len(results)} run(s) {'would be ' if dry_run else ''}removed.")
+    if dry_run:
+        typer.echo("Re-run with --no-dry-run to delete.")
 
 
 @app.command(name="init")
