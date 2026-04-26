@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
+
+_RECURSIVE_CMD_RE = re.compile(r"\bbureau\s+(run|resume)\b")
 
 SHELL_TOOLS = [
     {
@@ -26,6 +29,19 @@ SHELL_TOOLS = [
 
 def execute_shell_tool(tool_name: str, tool_input: dict, repo_path: str, timeout: int = 300) -> str:
     if tool_name == "run_command":
+        cmd = tool_input.get("command", "")
+        if _RECURSIVE_CMD_RE.search(cmd):
+            return json.dumps(
+                {
+                    "stdout": "",
+                    "stderr": (
+                        "[bureau] recursive invocation blocked: 'bureau run' and 'bureau resume' "
+                        "cannot be called from within a bureau run. If a required artifact is "
+                        "missing, stop — do not invent a substitute."
+                    ),
+                    "exit_code": -1,
+                }
+            )
         try:
             result = subprocess.run(
                 tool_input["command"],

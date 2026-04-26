@@ -21,6 +21,7 @@ from bureau.run_manager import (
     prune_runs,
     resume_run,
     write_run_record,
+    write_run_summary,
 )
 from bureau.state import Phase, RunStatus, make_initial_state
 
@@ -92,6 +93,7 @@ def run(
         record.status = RunStatus.FAILED
         record.current_phase = Phase.FAILED
         write_run_record(record)
+        write_run_summary({"run_id": run_id, "spec_path": record.spec_path}, "failed")
         events.emit(events.RUN_FAILED, id=run_id, phase=record.current_phase, error=str(exc))
         raise typer.Exit(2)
 
@@ -138,6 +140,7 @@ def resume(
         record = get_run(run_id)
         record.status = RunStatus.FAILED
         write_run_record(record)
+        write_run_summary({"run_id": run_id, "spec_path": record.spec_path}, "failed")
         events.emit(events.RUN_FAILED, id=run_id, phase=record.current_phase, error=str(exc))
         raise typer.Exit(2)
 

@@ -36,7 +36,7 @@ These are bureau's actual opinions — the tradeoffs it makes when reasonable pe
 A wrong guess is worse than a paused run. When bureau is uncertain, it surfaces a structured escalation with context, not a hallucinated best-effort. An interrupted run that tells you why it stopped is more useful than a completed run that silently got it wrong.
 
 **Verification gates are real gates.**  
-Skill verification requirements are non-negotiable. A phase is not complete until its output is verified. "Good enough" and "probably works" are not bureau states. The Critic's pass is the only pass that counts.
+Skill verification requirements are non-negotiable. A phase is not complete until its output is verified. "Good enough" and "probably works" are not bureau states. The Reviewer's pass is the only pass that counts.
 
 **The constitution is not optional.**  
 Constitution violations are CRITICAL findings. Bureau would rather escalate than ship a PR with an unresolved violation. No PR is better than a non-compliant PR.
@@ -45,7 +45,7 @@ Constitution violations are CRITICAL findings. Bureau would rather escalate than
 Bureau does not explain itself in prose. It emits run events, phase transitions, structured escalations, and a PR URL. If you need to read a wall of text to understand what bureau is doing, something is wrong.
 
 **The PR is the contract.**  
-Bureau's output is a pull request, not a conversation. The run summary attached to the PR is the artifact of record: decisions made, constitution findings, skills activated, Critic results. Everything bureau does is traceable through that PR.
+Bureau's output is a pull request, not a conversation. The run summary attached to the PR is the artifact of record: decisions made, constitution findings, skills activated, Reviewer results. Everything bureau does is traceable through that PR.
 
 **Autonomous means autonomous.**  
 Bureau does not ask for permission mid-run unless it genuinely cannot proceed. Unnecessary check-ins are a failure mode, not a safety feature. The spec approval is the check-in. After that, bureau runs.
@@ -87,9 +87,10 @@ Bureau speaks in **structured events and phase labels**, not prose.
 [bureau] phase.completed  phase=planner  duration=42s  skills=spec-driven-development,planning-and-task-breakdown
 [bureau] phase.started  phase=builder
 [bureau] phase.completed  phase=builder  duration=4m12s
-[bureau] phase.started  phase=critic
-[bureau] phase.completed  phase=critic  verdict=pass
-[bureau] run.completed  pr=https://github.com/org/repo/pull/42  duration=6m01s
+[bureau] phase.started  phase=reviewer
+[bureau] phase.completed  phase=reviewer  verdict=pass
+[bureau] pr.created  id=run-abc123  pr=https://github.com/org/repo/pull/42  duration=6m01s
+[bureau] run.completed  id=run-abc123  duration=6m01s
 ```
 
 **Escalations:**

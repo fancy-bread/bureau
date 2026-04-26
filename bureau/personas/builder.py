@@ -44,6 +44,9 @@ IMPORTANT:
 - Run `{test_cmd}` after each significant set of changes.
 - Do not modify test files unless the task explicitly requires it.
 - Work only within {repo_path}; never explore the broader filesystem.
+- Never run `bureau run`, `bureau resume`, or any `bureau` subcommand. Recursive \
+bureau invocations are forbidden. If a required artifact is missing (a schema, \
+contract, or reference file named in the spec), stop — do not invent a substitute.
 """
 
 _RETRY_TEMPLATE = """\

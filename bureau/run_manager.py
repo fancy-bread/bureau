@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import sys
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from bureau.state import Phase, RunRecord, RunStatus
 
@@ -150,6 +152,59 @@ def prune_runs(
         results.append(PruneResult(run_id=record.run_id, reason="; ".join(reasons), deleted=deleted))
 
     return results
+
+
+def write_run_summary(state: dict[str, Any], final_verdict: str) -> None:
+    """Write run-summary.json to the run directory. Never raises."""
+    try:
+        run_id = state.get("run_id", "unknown")
+        build_attempts = state.get("build_attempts", [])
+        ralph_rounds = state.get("ralph_rounds", [])
+
+        seen: dict[str, None] = {}
+        for attempt in build_attempts:
+            for f in attempt.get("files_changed", []):
+                seen[f] = None
+        files_changed = list(seen)
+
+        attempt_durations: list[float] = []
+        for rr in ralph_rounds:
+            try:
+                completed_at = datetime.fromisoformat(rr["completed_at"])
+                attempts = rr.get("build_attempts", [])
+                if attempts:
+                    started_at = datetime.fromisoformat(attempts[0]["timestamp"])
+                    attempt_durations.append((completed_at - started_at).total_seconds())
+            except (KeyError, ValueError, TypeError):
+                pass
+
+        try:
+            record = get_run(run_id)
+            status = str(record.status)
+            spec_path = record.spec_path
+        except Exception:
+            status = state.get("status", "unknown")
+            spec_path = state.get("spec_path", "")
+
+        payload = {
+            "run_id": run_id,
+            "status": status,
+            "spec_path": spec_path,
+            "ralph_rounds": len(ralph_rounds),
+            "reviewer_findings": state.get("reviewer_findings", []),
+            "files_changed": files_changed,
+            "attempt_durations": attempt_durations,
+            "final_verdict": final_verdict,
+            "completed_at": _now(),
+        }
+
+        run_dir = _run_dir(run_id)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        tmp = run_dir / "run-summary.json.tmp"
+        tmp.write_text(json.dumps(payload, indent=2, default=str))
+        os.replace(tmp, run_dir / "run-summary.json")
+    except Exception as e:
+        print(f"[bureau] run-summary write failed: {e}", file=sys.stderr)
 
 
 def init_repo(repo_path: str) -> str:

@@ -12,7 +12,8 @@ Bureau is the autonomous runtime for [ASDLC](https://asdlc.io). You hand it an a
 [bureau] phase.completed  phase=builder  duration=4m12s
 [bureau] phase.started  phase=reviewer
 [bureau] phase.completed  phase=reviewer  verdict=pass
-[bureau] run.completed  pr=https://github.com/org/repo/pull/42  duration=6m01s
+[bureau] pr.created  id=run-a3f9c2b1  pr=https://github.com/org/repo/pull/42  duration=6m01s
+[bureau] run.completed  id=run-a3f9c2b1  duration=6m01s
 ```
 
 Set `BUREAU_OUTPUT_FORMAT=cloudevents` to emit [CloudEvents 1.0](https://cloudevents.io) NDJSON instead — one JSON object per line, parseable by any structured log consumer:
@@ -197,7 +198,7 @@ BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 bureau run specs/my-feature/spec.m
 | `BUREAU_KAFKA_TOPIC` | `bureau.runs` | Target topic |
 | `BUREAU_INSTANCE_ID` | UUID generated at startup | Stable per-process identity in `source` URI |
 
-Kafka publishing is best-effort (`acks=0`). Broker failures are caught and logged to stderr; they never affect the run outcome or exit code.
+Kafka publishing is best-effort (`acks=1`, `retries=0`). Broker failures are caught and logged to stderr; they never affect the run outcome or exit code.
 
 ---
 

@@ -50,3 +50,12 @@ jobs:
           BUREAU_OUTPUT_FORMAT: cloudevents
           BUREAU_SOURCE_URI: https://github.com/${{ github.repository }}
           BUREAU_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+      - name: Upload bureau run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bureau-run-artifacts
+          path: bureau-artifacts/
+          retention-days: 7
+          if-no-files-found: ignore

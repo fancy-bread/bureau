@@ -13,6 +13,7 @@ from cloudevents.v1.http import CloudEvent
 
 RUN_STARTED = "run.started"
 RUN_COMPLETED = "run.completed"
+PR_CREATED = "pr.created"
 RUN_ESCALATED = "run.escalated"
 RUN_FAILED = "run.failed"
 PHASE_STARTED = "phase.started"
