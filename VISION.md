@@ -89,7 +89,8 @@ Bureau speaks in **structured events and phase labels**, not prose.
 [bureau] phase.completed  phase=builder  duration=4m12s
 [bureau] phase.started  phase=critic
 [bureau] phase.completed  phase=critic  verdict=pass
-[bureau] run.completed  pr=https://github.com/org/repo/pull/42  duration=6m01s
+[bureau] pr.created  id=run-abc123  pr=https://github.com/org/repo/pull/42  duration=6m01s
+[bureau] run.completed  id=run-abc123  duration=6m01s
 ```
 
 **Escalations:**

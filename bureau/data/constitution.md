@@ -64,7 +64,8 @@ Phases emit structured events to stdout:
 [bureau] run.started  id=<id>  spec=<path>
 [bureau] phase.started  phase=<name>
 [bureau] phase.completed  phase=<name>  duration=<t>
-[bureau] run.completed  pr=<url>  duration=<t>
+[bureau] pr.created  id=<id>  pr=<url>  duration=<t>
+[bureau] run.completed  id=<id>  duration=<t>
 ```
 
 Escalations emit to stdout with structured context and resume instructions.
