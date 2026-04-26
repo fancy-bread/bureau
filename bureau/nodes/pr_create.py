@@ -80,7 +80,7 @@ def pr_create_node(state: dict[str, Any]) -> dict[str, Any]:
 
         write_run_summary(state, "pass")
 
-    events.emit(events.RUN_COMPLETED, pr=pr_url, duration=f"{duration:.1f}s")
+    events.emit(events.PR_CREATED, id=run_id, pr=pr_url, duration=f"{duration:.1f}s")
 
     return {
         **state,

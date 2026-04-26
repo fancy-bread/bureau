@@ -53,7 +53,7 @@ def _base_state(tmp_path) -> dict:
     return state
 
 
-def test_pr_create_node_emits_run_completed(tmp_path, capsys):
+def test_pr_create_node_emits_pr_created(tmp_path, capsys):
     state = _base_state(tmp_path)
 
     mock_result = MagicMock()
@@ -69,7 +69,8 @@ def test_pr_create_node_emits_run_completed(tmp_path, capsys):
         result = pr_create_node(state)
 
     captured = capsys.readouterr()
-    assert "run.completed" in captured.out
+    assert "pr.created" in captured.out
+    assert "run.completed" not in captured.out
     assert "https://github.com/org/repo/pull/42" in captured.out
     assert result["phase"] == Phase.COMPLETE
 

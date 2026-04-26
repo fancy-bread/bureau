@@ -110,11 +110,11 @@ def test_smoke_hello_world(bureau_test_repo):
     else:
         assert any("result=pass" in ln for ln in ralph_lines), "no ralph.attempt with result=pass found"
 
-    # run.completed carries pr and duration
-    completed_line = next((ln for ln in result.stdout.splitlines() if "run.completed" in ln), None)
-    assert completed_line is not None
-    assert "pr" in completed_line
-    assert "duration" in completed_line
+    # pr.created carries pr URL and duration; run.completed is emitted separately by cli
+    pr_line = next((ln for ln in result.stdout.splitlines() if "pr.created" in ln), None)
+    assert pr_line is not None
+    assert "pr" in pr_line
+    assert "duration" in pr_line
 
 
 @pytest.mark.timeout(350)
