@@ -8,7 +8,7 @@ from typing import Any
 from bureau import events
 from bureau.memory import Memory
 from bureau.models import ReviewerFinding, RunSummary
-from bureau.run_manager import get_run
+from bureau.run_manager import get_run, write_run_summary
 from bureau.state import Escalation, EscalationReason, Phase
 
 
@@ -77,6 +77,8 @@ def pr_create_node(state: dict[str, Any]) -> dict[str, Any]:
 
         mem = Memory(run_id)
         mem.write("run_summary", run_summary.model_dump())
+
+        write_run_summary(state, "pass")
 
     events.emit(events.RUN_COMPLETED, pr=pr_url, duration=f"{duration:.1f}s")
 

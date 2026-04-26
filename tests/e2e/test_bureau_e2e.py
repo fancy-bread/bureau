@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,26 @@ def _is_cloudevents(stdout: str) -> bool:
         return obj.get("specversion") == "1.0"
     except (json.JSONDecodeError, AttributeError):
         return False
+
+
+def _write_bureau_artifact(stdout: str) -> None:
+    """Write captured bureau stdout to bureau-artifacts/ for CI upload."""
+    run_id = f"unknown-{int(time.time())}"
+    for line in stdout.splitlines():
+        try:
+            obj = json.loads(line)
+            if "run.started" in obj.get("type", ""):
+                run_id = obj.get("data", {}).get("id", run_id)
+                break
+        except (json.JSONDecodeError, AttributeError):
+            m = re.search(r"run\.started.*\bid=(\S+)", line)
+            if m:
+                run_id = m.group(1)
+                break
+    ext = "ndjson" if _is_cloudevents(stdout) else "log"
+    out_dir = Path("bureau-artifacts")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"bureau-run-{run_id}.{ext}").write_text(stdout)
 
 
 def _assert_phase_order(stdout: str) -> None:
@@ -66,6 +87,7 @@ def _assert_phase_order(stdout: str) -> None:
 def test_smoke_hello_world(bureau_test_repo):
     spec_path = str(Path(bureau_test_repo) / "specs" / "001-smoke-hello-world" / "spec.md")
     result = run_bureau(spec_path, bureau_test_repo)
+    _write_bureau_artifact(result.stdout)
 
     assert result.returncode == 0, (
         f"bureau exited {result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
@@ -99,6 +121,7 @@ def test_smoke_hello_world(bureau_test_repo):
 def test_escalation_missing_artifact(bureau_test_repo):
     spec_path = str(Path(bureau_test_repo) / "specs" / "004-escalation-missing-schema" / "spec.md")
     result = run_bureau(spec_path, bureau_test_repo, timeout=300)
+    _write_bureau_artifact(result.stdout)
 
     assert "run.escalated" in result.stdout
     # no PR opened — check absence of pull URL rather than absence of github.com

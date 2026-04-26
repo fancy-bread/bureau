@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from bureau import events
-from bureau.run_manager import get_run, write_run_record
+from bureau.run_manager import get_run, write_run_record, write_run_summary
 from bureau.state import Escalation, Phase, RunStatus
 
 
@@ -42,5 +42,7 @@ def escalate_node(state: dict[str, Any]) -> dict[str, Any]:
         write_run_record(record)
     except Exception:
         pass
+
+    write_run_summary(state, "escalated")
 
     return {**state, "phase": Phase.ESCALATE}
