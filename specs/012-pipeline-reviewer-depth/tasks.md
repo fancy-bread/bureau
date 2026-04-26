@@ -16,7 +16,7 @@
 
 **Purpose**: This is an extension to an existing codebase — no project scaffold needed. The only setup is verifying the target module directories exist and reviewing the existing `execute_shell_tool` entrypoint before implementing `run_pipeline`.
 
-- [ ] T001 Review `bureau/tools/shell_tools.py` `execute_shell_tool` signature and confirm the call convention for `run_pipeline` wrapper (no file changes — reading only)
+- [X] T001 Review `bureau/tools/shell_tools.py` `execute_shell_tool` signature and confirm the call convention for `run_pipeline` wrapper (no file changes — reading only)
 
 ---
 
@@ -26,8 +26,8 @@
 
 **⚠️ CRITICAL**: US1 and US2 cannot be implemented until T002 and T003 are complete.
 
-- [ ] T002 [P] Add `PipelinePhase` StrEnum (INSTALL, LINT, BUILD, TEST) and `PipelineResult` Pydantic model (fields: `passed: bool`, `failed_phase: Optional[PipelinePhase]`, `failed_output: str`, `phases_run: list[PipelinePhase]`) to `bureau/models.py`
-- [ ] T003 [P] Create `bureau/tools/pipeline.py` with `run_pipeline(repo_path: str, phases: list[tuple[PipelinePhase, str]], timeout: int) -> PipelineResult` — iterates phases in order, calls `execute_shell_tool("run_command", {"command": cmd}, repo_path, timeout)`, stops on first non-zero exit, truncates `failed_output` to 2000 chars
+- [X] T002 [P] Add `PipelinePhase` StrEnum (INSTALL, LINT, BUILD, TEST) and `PipelineResult` Pydantic model (fields: `passed: bool`, `failed_phase: Optional[PipelinePhase]`, `failed_output: str`, `phases_run: list[PipelinePhase]`) to `bureau/models.py`
+- [X] T003 [P] Create `bureau/tools/pipeline.py` with `run_pipeline(repo_path: str, phases: list[tuple[PipelinePhase, str]], timeout: int) -> PipelineResult` — iterates phases in order, calls `execute_shell_tool("run_command", {"command": cmd}, repo_path, timeout)`, stops on first non-zero exit, truncates `failed_output` to 2000 chars
 
 **Checkpoint**: `PipelinePhase`, `PipelineResult`, and `run_pipeline` importable — US1 and US2 can now proceed in parallel.
 
@@ -41,8 +41,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Update `bureau/nodes/builder.py`: inside the attempt loop (before `run_builder_attempt`), build the active phase list from `repo_context.lint_cmd` and `repo_context.build_cmd` (skip empty), call `run_pipeline(repo_path, active_phases, timeout)`, and if `not result.passed` return `_escalate` with message identifying `result.failed_phase.value` and `result.failed_output` — covers FR-001, FR-002, FR-003, FR-004
-- [ ] T005 [P] [US1] Write integration tests for builder pipeline gates in `tests/integration/test_builder_node.py`: (a) lint failure stops builder and escalates with phase "lint", (b) build failure stops builder and escalates with phase "build", (c) empty `lint_cmd` and `build_cmd` are skipped and run proceeds to test normally — covers SC-001, SC-005
+- [X] T004 [US1] Update `bureau/nodes/builder.py`: inside the attempt loop (before `run_builder_attempt`), build the active phase list from `repo_context.lint_cmd` and `repo_context.build_cmd` (skip empty), call `run_pipeline(repo_path, active_phases, timeout)`, and if `not result.passed` return `_escalate` with message identifying `result.failed_phase.value` and `result.failed_output` — covers FR-001, FR-002, FR-003, FR-004
+- [X] T005 [P] [US1] Write integration tests for builder pipeline gates in `tests/integration/test_builder_node.py`: (a) lint failure stops builder and escalates with phase "lint", (b) build failure stops builder and escalates with phase "build", (c) empty `lint_cmd` and `build_cmd` are skipped and run proceeds to test normally — covers SC-001, SC-005
 
 **Checkpoint**: US1 fully functional. A repo with a failing lint step now escalates with the lint phase named.
 
@@ -56,8 +56,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T006 [US2] Update `bureau/nodes/reviewer.py`: after reading `builder_summary` from memory and before calling `run_reviewer`, build all four phases from `repo_context` (install, lint, build, test — skip empty), call `run_pipeline(repo_path, active_phases, timeout)`, and if `not result.passed` return an immediate `revise` verdict (bypass LLM) with a `ReviewerFinding` identifying `result.failed_phase.value` and `result.failed_output` — covers FR-005, FR-009, FR-010
-- [ ] T007 [P] [US2] Write integration tests for reviewer independent pipeline in `tests/integration/test_reviewer_node.py`: (a) reviewer runs pipeline independently and issues `revise` when test_cmd exits non-zero, (b) reviewer pipeline runs in order (lint before build before test), (c) empty lint/build phases are skipped — covers SC-002
+- [X] T006 [US2] Update `bureau/nodes/reviewer.py`: after reading `builder_summary` from memory and before calling `run_reviewer`, build all four phases from `repo_context` (install, lint, build, test — skip empty), call `run_pipeline(repo_path, active_phases, timeout)`, and if `not result.passed` return an immediate `revise` verdict (bypass LLM) with a `ReviewerFinding` identifying `result.failed_phase.value` and `result.failed_output` — covers FR-005, FR-009, FR-010
+- [X] T007 [P] [US2] Write integration tests for reviewer independent pipeline in `tests/integration/test_reviewer_node.py`: (a) reviewer runs pipeline independently and issues `revise` when test_cmd exits non-zero, (b) reviewer pipeline runs in order (lint before build before test), (c) empty lint/build phases are skipped — covers SC-002
 
 **Checkpoint**: US2 fully functional. Reviewer now re-executes the pipeline independently regardless of builder's self-report.
 
@@ -71,9 +71,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T008 [US3] Update `bureau/nodes/reviewer.py`: after reading `builder_summary`, iterate `files_changed`, read each file from `repo_path / relative_path` (skip missing files with a note), collect `{path: content}` dict; if `files_changed` is empty or absent, build a finding that no files were changed and prepare to issue `revise` — covers FR-006 and the "no files_changed" edge case
-- [ ] T009 [US3] Update `bureau/personas/reviewer.py`: add `file_contents: dict[str, str]` parameter to `run_reviewer`; implement `has_assertions(content: str) -> bool` (detects `assert ` keyword, `self.assert` prefix, `pytest.raises`, `pytest.approx`); for each test file (path matches `test_*.py` or `*_test.py`) with `has_assertions() == False`, add a `TestQualityFinding` to the findings list and force `verdict = "revise"`; inject all file contents into the LLM system prompt for FR-008 code review against spec FRs — covers FR-007, FR-008
-- [ ] T010 [P] [US3] Write unit tests for `has_assertions()` in `tests/unit/test_pipeline.py`: (a) file with `assert` keyword returns True, (b) file with `self.assertEqual` returns True, (c) file with `pytest.raises` returns True, (d) file with only `pass` bodies returns False, (e) file with no test functions returns False — covers SC-002
+- [X] T008 [US3] Update `bureau/nodes/reviewer.py`: after reading `builder_summary`, iterate `files_changed`, read each file from `repo_path / relative_path` (skip missing files with a note), collect `{path: content}` dict; if `files_changed` is empty or absent, build a finding that no files were changed and prepare to issue `revise` — covers FR-006 and the "no files_changed" edge case
+- [X] T009 [US3] Update `bureau/personas/reviewer.py`: add `file_contents: dict[str, str]` parameter to `run_reviewer`; implement `has_assertions(content: str) -> bool` (detects `assert ` keyword, `self.assert` prefix, `pytest.raises`, `pytest.approx`); for each test file (path matches `test_*.py` or `*_test.py`) with `has_assertions() == False`, add a `TestQualityFinding` to the findings list and force `verdict = "revise"`; inject all file contents into the LLM system prompt for FR-008 code review against spec FRs — covers FR-007, FR-008
+- [X] T010 [P] [US3] Write unit tests for `has_assertions()` in `tests/unit/test_pipeline.py`: (a) file with `assert` keyword returns True, (b) file with `self.assertEqual` returns True, (c) file with `pytest.raises` returns True, (d) file with only `pass` bodies returns False, (e) file with no test functions returns False — covers SC-002
 
 **Checkpoint**: All three user stories complete. Reviewer reads actual files, catches trivially-passing tests, and evaluates FRs against real implementation.
 
@@ -83,7 +83,7 @@
 
 **Purpose**: Verify empty-command behaviour, run full CI, and confirm no regressions.
 
-- [ ] T011 Run `make ci` to execute the full lint + unit + integration test suite and confirm all tests pass — covers SC-005 (empty `lint_cmd`/`build_cmd` unaffected) and SC-003 (no excessive overhead)
+- [X] T011 Run `make ci` to execute the full lint + unit + integration test suite and confirm all tests pass — covers SC-005 (empty `lint_cmd`/`build_cmd` unaffected) and SC-003 (no excessive overhead)
 
 ---
 

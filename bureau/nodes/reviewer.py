@@ -10,9 +10,10 @@ import anthropic
 from bureau import events
 from bureau.config import load_constitution
 from bureau.memory import Memory
-from bureau.models import BuildAttempt, RalphRound
+from bureau.models import BuildAttempt, PipelinePhase, RalphRound, ReviewerFinding, ReviewerVerdict
 from bureau.personas.reviewer import run_reviewer
 from bureau.state import Escalation, EscalationReason, Phase
+from bureau.tools.pipeline import run_pipeline
 
 _SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "addyosmani"
 
@@ -44,6 +45,7 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
     spec_text = state.get("spec_text") or Path(spec_path).read_text(encoding="utf-8")
     constitution = load_constitution(repo_path, repo_context)
     model = repo_context.reviewer_model if repo_context else "claude-opus-4-7"
+    timeout = repo_context.command_timeout if repo_context else 300
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -52,7 +54,80 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
         summary_dict = mem.read("builder_summary")
         builder_summary = _format_builder_summary(summary_dict)
     except KeyError:
+        summary_dict = {}
         builder_summary = "No builder summary available."
+
+    # Independent pipeline re-execution (FR-005, FR-009, FR-010)
+    if repo_context:
+        all_phases = [
+            (PipelinePhase.INSTALL, repo_context.install_cmd),
+            (PipelinePhase.LINT, repo_context.lint_cmd),
+            (PipelinePhase.BUILD, repo_context.build_cmd),
+            (PipelinePhase.TEST, repo_context.test_cmd),
+        ]
+        active_phases = [(p, cmd) for p, cmd in all_phases if cmd.strip()]
+        if active_phases:
+            pipeline_result = run_pipeline(repo_path, active_phases, timeout)
+            if not pipeline_result.passed:
+                phase_name = pipeline_result.failed_phase.value
+                finding = ReviewerFinding(
+                    type="requirement",
+                    ref_id="FR-009",
+                    verdict="unmet",
+                    detail=(
+                        f"Reviewer independent pipeline failed at {phase_name} phase: "
+                        f"{pipeline_result.failed_output[:500]}"
+                    ),
+                    remediation=f"Fix the {phase_name} failure before resubmitting.",
+                )
+                revise_verdict = ReviewerVerdict(
+                    verdict="revise",
+                    findings=[finding],
+                    summary=f"Reviewer independent pipeline failed at {phase_name}.",
+                    round=ralph_round,
+                )
+                return _process_verdict(state, revise_verdict, ralph_round, repo_context)
+
+    # Read changed files from memory scratchpad (FR-006)
+    files_changed = summary_dict.get("files_changed", []) if isinstance(summary_dict, dict) else []
+    file_contents: dict[str, str] = {}
+    pre_findings: list[ReviewerFinding] = []
+
+    if not files_changed:
+        pre_findings.append(
+            ReviewerFinding(
+                type="requirement",
+                ref_id="FR-006",
+                verdict="unmet",
+                detail="No files_changed in builder summary; implementation cannot be verified.",
+                remediation="Builder must populate files_changed in memory scratchpad.",
+            )
+        )
+    else:
+        for rel_path in files_changed:
+            abs_path = Path(repo_path) / rel_path
+            if abs_path.exists():
+                file_contents[rel_path] = abs_path.read_text(encoding="utf-8")
+            else:
+                pre_findings.append(
+                    ReviewerFinding(
+                        type="requirement",
+                        ref_id="FR-006",
+                        verdict="unmet",
+                        detail=f"File {rel_path} listed in files_changed but not found on disk.",
+                        remediation="Builder must write all files it lists in files_changed.",
+                    )
+                )
+
+    if pre_findings and not file_contents:
+        # No files available to review at all — revise immediately
+        revise_verdict = ReviewerVerdict(
+            verdict="revise",
+            findings=pre_findings,
+            summary="Reviewer could not read any changed files.",
+            round=ralph_round,
+        )
+        return _process_verdict(state, revise_verdict, ralph_round, repo_context)
 
     try:
         verdict = run_reviewer(
@@ -62,6 +137,7 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
             builder_summary=builder_summary,
             ralph_round=ralph_round,
             model=model,
+            file_contents=file_contents,
         )
     except Exception as exc:
         return _escalate(
@@ -70,6 +146,34 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
             EscalationReason.BLOCKER,
         )
 
+    # Merge any pre-findings (missing files) into the verdict
+    if pre_findings:
+        merged_findings = list(verdict.findings) + pre_findings
+        if verdict.verdict == "pass":
+            verdict = ReviewerVerdict(
+                verdict="revise",
+                findings=merged_findings,
+                summary=verdict.summary + " (some files could not be read)",
+                round=ralph_round,
+            )
+        else:
+            verdict = ReviewerVerdict(
+                verdict=verdict.verdict,
+                findings=merged_findings,
+                summary=verdict.summary,
+                round=ralph_round,
+            )
+
+    return _process_verdict(state, verdict, ralph_round, repo_context)
+
+
+def _process_verdict(
+    state: dict[str, Any],
+    verdict: ReviewerVerdict,
+    ralph_round: int,
+    repo_context: Any,
+) -> dict[str, Any]:
+    run_id = state["run_id"]
     all_attempts: list[dict] = state.get("build_attempts", [])
     round_attempts = [
         BuildAttempt.model_validate(a) for a in all_attempts if a.get("round") == ralph_round
@@ -86,6 +190,7 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
     existing_ralph_rounds = list(state.get("ralph_rounds", []))
     existing_ralph_rounds.append(ralph_round_record.model_dump())
 
+    mem = Memory(run_id)
     mem.write("reviewer_findings", [f.model_dump() for f in verdict.findings])
 
     updated_state = {

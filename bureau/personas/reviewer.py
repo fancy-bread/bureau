@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 import anthropic
 
-from bureau.models import ReviewerVerdict
+from bureau.models import ReviewerFinding, ReviewerVerdict
 
 _SYSTEM_TEMPLATE = """\
 You are Bureau's Reviewer persona. Audit the Builder's implementation against the spec's \
@@ -18,8 +19,12 @@ functional requirements and the Spec Kit constitution.
 ## Spec Functional Requirements
 {fr_list}
 
+## Changed Files
+{file_section}
+
 ## Instructions
-Evaluate the Builder's implementation summary against EVERY functional requirement listed above.
+Evaluate the Builder's implementation against EVERY functional requirement listed above.
+Where file contents are provided, base your evaluation on those actual contents.
 Also check for any constitution violations.
 
 Respond ONLY with a JSON object (no other text, no code block markers) matching this schema:
@@ -46,8 +51,27 @@ Routing rules you MUST follow:
 """
 
 _JSON_PATTERN = re.compile(r"\{.*\}", re.DOTALL)
-
 _FR_LINE = re.compile(r"- \*\*FR-\d{3}\*\*:")
+_TEST_FILE_RE = re.compile(r"(^|/)test_.*\.py$|/.*_test\.py$")
+_ASSERT_RE = re.compile(r"\bassert\s|self\.assert\w|pytest\.raises|pytest\.approx")
+
+
+def has_assertions(content: str) -> bool:
+    return bool(_ASSERT_RE.search(content))
+
+
+def _is_test_file(path: str) -> bool:
+    p = Path(path)
+    return p.name.startswith("test_") or p.name.endswith("_test.py")
+
+
+def _format_file_section(file_contents: dict[str, str]) -> str:
+    if not file_contents:
+        return "(no changed files available for review)"
+    parts = []
+    for path, content in file_contents.items():
+        parts.append(f"### {path}\n```\n{content[:3000]}\n```")
+    return "\n\n".join(parts)
 
 
 def run_reviewer(
@@ -57,13 +81,46 @@ def run_reviewer(
     builder_summary: str,
     ralph_round: int,
     model: str,
+    file_contents: dict[str, str] | None = None,
 ) -> ReviewerVerdict:
+    if file_contents is None:
+        file_contents = {}
+
+    # Test quality gate (FR-007): automatic revise for non-asserting test files
+    quality_findings: list[ReviewerFinding] = []
+    for path, content in file_contents.items():
+        if _is_test_file(path) and not has_assertions(content):
+            quality_findings.append(
+                ReviewerFinding(
+                    type="requirement",
+                    ref_id="FR-007",
+                    verdict="unmet",
+                    detail=(
+                        f"{path}: no assertions found. Test body appears trivially passing "
+                        "(pass-only or missing assert statements)."
+                    ),
+                    remediation=(
+                        "Add meaningful assertions that import the module under test, "
+                        "call its functions, and verify expected outputs."
+                    ),
+                )
+            )
+
+    if quality_findings:
+        return ReviewerVerdict(
+            verdict="revise",
+            findings=quality_findings,
+            summary=f"{len(quality_findings)} test file(s) contain no assertions — automatic revise.",
+            round=ralph_round,
+        )
+
     fr_lines = [line.strip() for line in spec_text.splitlines() if _FR_LINE.match(line.strip())]
     fr_list = "\n".join(fr_lines) if fr_lines else spec_text
 
     system = _SYSTEM_TEMPLATE.format(
         constitution=constitution,
         fr_list=fr_list,
+        file_section=_format_file_section(file_contents),
         round=ralph_round,
     )
 
