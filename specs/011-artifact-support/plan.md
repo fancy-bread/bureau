@@ -4,27 +4,27 @@
 
 ## Summary
 
-Bureau runs produce no persistent trace beyond the PR body. This plan adds a structured `report.json` written at run end (pr_create, escalate, and failure paths) and a CI artifact upload of the captured bureau stdout after each e2e run. No new Python dependencies; all data is already present in LangGraph state.
+Bureau runs produce no persistent trace beyond the PR body. This plan adds a structured `run-summary.json` written at run end (pr_create, escalate, and failure paths) and a CI artifact upload of the captured bureau stdout after each e2e run. No new Python dependencies; all data is already present in LangGraph state.
 
 ## Technical Context
 
 **Language/Version**: Python 3.14
 **Primary Dependencies**: langgraph 0.2+, pydantic>=2, typer>=0.12 (all existing)
-**Storage**: `~/.bureau/runs/<run-id>/report.json` (new file alongside existing `run.json`); `./bureau-artifacts/` directory during CI runs
+**Storage**: `~/.bureau/runs/<run-id>/run-summary.json` (new file alongside existing `run.json`); `./bureau-artifacts/` directory during CI runs
 **Testing**: pytest (existing)
 **Target Platform**: Linux (CI), macOS (local dev)
 **Project Type**: CLI tool / LangGraph runtime
-**Performance Goals**: report.json write < 10ms (stdlib JSON, atomic rename)
-**Constraints**: report.json write MUST NOT raise; CI artifact upload MUST run on test failure
-**Scale/Scope**: One report.json per run; one artifact file per bureau run in e2e
+**Performance Goals**: run-summary.json write < 10ms (stdlib JSON, atomic rename)
+**Constraints**: run-summary.json write MUST NOT raise; CI artifact upload MUST run on test failure
+**Scale/Scope**: One run-summary.json per run; one artifact file per bureau run in e2e
 
 ## Constitution Check
 
 - **Spec-First** ✅: Approved spec at `specs/011-artifact-support/spec.md`
-- **Escalate-Don't-Guess** ✅: report.json write errors caught and logged to stderr; never raise
-- **Verification Gates** ✅: Unit tests for `write_run_report`; e2e test validates artifact file is written
+- **Escalate-Don't-Guess** ✅: run-summary.json write errors caught and logged to stderr; never raise
+- **Verification Gates** ✅: Unit tests for `write_run_summary`; e2e test validates artifact file is written
 - **Constitution-First** ✅: No constitution changes; report includes reviewer findings for audit
-- **Terse Output** ✅: No new stdout events; report.json is file-based
+- **Terse Output** ✅: No new stdout events; run-summary.json is file-based
 - **Autonomy/Resumability** ✅: write is idempotent; resumed runs overwrite with final state
 
 No violations.
@@ -45,16 +45,16 @@ specs/011-artifact-support/
 
 ```text
 bureau/
-├── run_manager.py          # add write_run_report(state, final_verdict)
+├── run_manager.py          # add write_run_summary(state, final_verdict)
 └── nodes/
-    ├── pr_create.py        # call write_run_report on success
-    └── escalate.py         # call write_run_report on escalation
+    ├── pr_create.py        # call write_run_summary on success
+    └── escalate.py         # call write_run_summary on escalation
 
-bureau/cli.py               # call write_run_report (minimal) on failure
+bureau/cli.py               # call write_run_summary (minimal) on failure
 
 tests/
 ├── unit/
-│   └── test_run_report.py  # new: unit tests for write_run_report
+│   └── test_run_summary.py  # new: unit tests for write_run_summary
 └── e2e/
     ├── test_bureau_e2e.py  # write captured stdout to bureau-artifacts/
     └── conftest.py         # fixture: ensure bureau-artifacts/ dir exists
@@ -65,12 +65,12 @@ tests/
 
 ## Implementation Details
 
-### US1: write_run_report
+### US1: write_run_summary
 
 **Function signature** in `bureau/run_manager.py`:
 
 ```python
-def write_run_report(state: dict, final_verdict: str) -> None
+def write_run_summary(state: dict, final_verdict: str) -> None
 ```
 
 - Aggregates `files_changed` as ordered union from all `state["build_attempts"][*].files_changed`

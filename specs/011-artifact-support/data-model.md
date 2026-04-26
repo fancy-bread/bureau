@@ -1,8 +1,8 @@
 # Data Model: Artifact Support
 
-## report.json Schema
+## run-summary.json Schema
 
-Written to `~/.bureau/runs/<run-id>/report.json`.
+Written to `~/.bureau/runs/<run-id>/run-summary.json`.
 
 ```json
 {
@@ -21,7 +21,7 @@ Written to `~/.bureau/runs/<run-id>/report.json`.
   ],
   "files_changed": [
     "bureau/run_manager.py",
-    "tests/unit/test_run_report.py"
+    "tests/unit/test_run_summary.py"
   ],
   "attempt_durations": [45.2, 30.1],
   "final_verdict": "pass",

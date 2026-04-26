@@ -23,14 +23,14 @@ After a bureau run completes or escalates, an operator or downstream tool can re
 
 **Why this priority**: The run report is pure bureau-internal work, has no external dependencies, and is the foundation the build audit artifact builds on. It also unlocks downstream agent consumption of run data.
 
-**Independent Test**: Run bureau against a spec; confirm `report.json` exists in the run directory with correct fields for both a passing and an escalating run.
+**Independent Test**: Run bureau against a spec; confirm `run-summary.json` exists in the run directory with correct fields for both a passing and an escalating run.
 
 **Acceptance Scenarios**:
 
-1. **Given** a bureau run completes successfully, **When** the run finishes, **Then** `report.json` is written to the run directory containing `run_id`, `status`, `spec_path`, `ralph_rounds`, `reviewer_findings`, `files_changed`, `attempt_durations`, and `final_verdict: pass`.
-2. **Given** a bureau run escalates, **When** the escalation is emitted, **Then** `report.json` is written with `final_verdict: escalated` and the escalation question included.
-3. **Given** a bureau run fails with an unhandled error, **Then** `report.json` is written with `status: failed` and `final_verdict: failed`.
-4. **Given** `report.json` already exists for a run (e.g., resumed run), **When** the run completes, **Then** the report is overwritten with the final state.
+1. **Given** a bureau run completes successfully, **When** the run finishes, **Then** `run-summary.json` is written to the run directory containing `run_id`, `status`, `spec_path`, `ralph_rounds`, `reviewer_findings`, `files_changed`, `attempt_durations`, and `final_verdict: pass`.
+2. **Given** a bureau run escalates, **When** the escalation is emitted, **Then** `run-summary.json` is written with `final_verdict: escalated` and the escalation question included.
+3. **Given** a bureau run fails with an unhandled error, **Then** `run-summary.json` is written with `status: failed` and `final_verdict: failed`.
+4. **Given** `run-summary.json` already exists for a run (e.g., resumed run), **When** the run completes, **Then** the report is overwritten with the final state.
 
 ---
 
@@ -54,7 +54,7 @@ After each e2e CI run, the full bureau stdout log is uploaded as a downloadable 
 ### Edge Cases
 
 - What if bureau produces no stdout at all (crash before first event)? Upload an empty or minimal artifact with a fallback name; do not fail the upload step.
-- What if the run directory already has a `report.json` from a previous attempt? Overwrite it at the end of each run.
+- What if the run directory already has a `run-summary.json` from a previous attempt? Overwrite it at the end of each run.
 - What if `reviewer_findings` or `files_changed` are not available (e.g., run failed before reviewer ran)? Include empty lists; do not omit the fields.
 
 ---
@@ -63,10 +63,10 @@ After each e2e CI run, the full bureau stdout log is uploaded as a downloadable 
 
 ### Functional Requirements
 
-- **FR-001**: Bureau MUST write `report.json` to the run directory at run completion (status: complete or failed) and at escalation (status: paused).
-- **FR-002**: `report.json` MUST contain: `run_id`, `status`, `spec_path`, `ralph_rounds` (integer count), `reviewer_findings` (list of finding objects), `files_changed` (list of file paths), `attempt_durations` (list of durations in seconds), `final_verdict` (one of: `pass`, `failed`, `escalated`).
-- **FR-003**: `report.json` MUST be written atomically — a partial write must not leave a corrupt file.
-- **FR-004**: Writing `report.json` MUST NOT crash a run; errors are logged to stderr and silently suppressed.
+- **FR-001**: Bureau MUST write `run-summary.json` to the run directory at run completion (status: complete or failed) and at escalation (status: paused).
+- **FR-002**: `run-summary.json` MUST contain: `run_id`, `status`, `spec_path`, `ralph_rounds` (integer count), `reviewer_findings` (list of finding objects), `files_changed` (list of file paths), `attempt_durations` (list of durations in seconds), `final_verdict` (one of: `pass`, `failed`, `escalated`).
+- **FR-003**: `run-summary.json` MUST be written atomically — a partial write must not leave a corrupt file.
+- **FR-004**: Writing `run-summary.json` MUST NOT crash a run; errors are logged to stderr and silently suppressed.
 - **FR-005**: The e2e CI workflow MUST upload the bureau stdout log as a CI artifact after every run, including when tests fail.
 - **FR-006**: The artifact MUST be named `bureau-run-<run-id>.ndjson` when bureau output is in CloudEvents format, or `bureau-run-<run-id>.log` otherwise.
 - **FR-007**: The run-id used for artifact naming MUST be extracted from the bureau stdout event stream (from the `run.started` event); a static fallback name MUST be used if extraction fails.
@@ -74,7 +74,7 @@ After each e2e CI run, the full bureau stdout log is uploaded as a downloadable 
 
 ### Key Entities
 
-- **Run Report** (`report.json`): Structured summary of a single bureau run. Fields: `run_id` (string), `status` (string), `spec_path` (string), `ralph_rounds` (integer), `reviewer_findings` (list of finding objects with `severity`, `category`, `message`), `files_changed` (list of strings), `attempt_durations` (list of floats), `final_verdict` (string: pass/failed/escalated), `completed_at` (ISO timestamp).
+- **Run Report** (`run-summary.json`): Structured summary of a single bureau run. Fields: `run_id` (string), `status` (string), `spec_path` (string), `ralph_rounds` (integer), `reviewer_findings` (list of finding objects with `severity`, `category`, `message`), `files_changed` (list of strings), `attempt_durations` (list of floats), `final_verdict` (string: pass/failed/escalated), `completed_at` (ISO timestamp).
 - **Build Audit Artifact**: The raw bureau stdout captured during an e2e CI run, stored as a named CI artifact for post-hoc inspection.
 
 ---
@@ -83,10 +83,10 @@ After each e2e CI run, the full bureau stdout log is uploaded as a downloadable 
 
 ### Measurable Outcomes
 
-- **SC-001**: After every bureau run (complete, failed, or escalated), `report.json` is present in the run directory within 1 second of the run ending.
-- **SC-002**: `report.json` is valid JSON and contains all required fields in 100% of runs.
+- **SC-001**: After every bureau run (complete, failed, or escalated), `run-summary.json` is present in the run directory within 1 second of the run ending.
+- **SC-002**: `run-summary.json` is valid JSON and contains all required fields in 100% of runs.
 - **SC-003**: After every e2e CI workflow execution, at least one downloadable artifact is available, regardless of whether the tests passed or failed.
-- **SC-004**: A team member can identify the cause of a bureau run outcome by reading `report.json` alone, without parsing raw log output.
+- **SC-004**: A team member can identify the cause of a bureau run outcome by reading `run-summary.json` alone, without parsing raw log output.
 
 ---
 

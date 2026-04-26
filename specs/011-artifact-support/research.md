@@ -2,7 +2,7 @@
 
 ## Existing State Inventory
 
-**Decision**: All data needed for `report.json` is already present in LangGraph state at run-end.
+**Decision**: All data needed for `run-summary.json` is already present in LangGraph state at run-end.
 **Rationale**: No new state fields are required for US1.
 **Details**:
 - `state["ralph_round"]` — current round counter (0-indexed integer). Completed round count = `len(state["ralph_rounds"])`.
@@ -12,7 +12,7 @@
 - `state["run_id"]`, `state["spec_path"]` — present from initial state.
 - `RunRecord.status` — available from `get_run(run_id)` in `run_manager.py`.
 
-## Where to Write report.json
+## Where to Write run-summary.json
 
 **Decision**: Write from within terminal nodes (`pr_create_node`, `escalate_node`) and from `cli.py` on the unhandled-exception path.
 **Rationale**: Nodes have direct access to the full LangGraph state dict. The `cli.py` run loop discards streaming state chunks; retrieving the full final state from the SQLite checkpoint would add unnecessary complexity. The exception path in `cli.py` only has `RunRecord`, so it writes a minimal report there.
@@ -29,7 +29,7 @@
 
 **Rationale**: No new fields needed; data is already captured. Per-round duration (not per-attempt) matches what a human reader cares about — "how long did each builder-reviewer cycle take".
 
-## Atomic Write for report.json
+## Atomic Write for run-summary.json
 
 **Decision**: Write to a `.tmp` sibling file then `os.replace()` (atomic on POSIX).
 **Rationale**: Prevents partial reads if bureau is interrupted during write. Same directory as `run.json` so the rename is within the same filesystem mount.
