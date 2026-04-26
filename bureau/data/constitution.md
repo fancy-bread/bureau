@@ -19,7 +19,7 @@ never hallucinate a best-effort answer to an unresolvable question.
 
 ### III. Verification Gates Are Real Gates
 
-A phase is not complete until its output is verified. Tests MUST pass. The Critic's
+A phase is not complete until its output is verified. Tests MUST pass. The Reviewer's
 verdict is the only verdict that counts. "Probably works" and "good enough" are not
 bureau states. Bureau MUST NOT advance to the next phase until the current phase
 output satisfies all verification requirements defined in the spec or constitution.
@@ -50,13 +50,13 @@ resumed. Resumability takes precedence over execution speed.
 Bureau executes runs as a sequenced phase pipeline. Phases MUST be honored in order;
 no phase may be skipped.
 
-**Phase sequence**: Planner → Builder → Critic → PR Creation
+**Phase sequence**: Planner → Builder → Reviewer → PR Creation
 
 - **Entry gate**: Approved spec at `specs/[###-feature-name]/spec.md`
 - **Planner**: Produces implementation plan and task breakdown
 - **Builder**: Implements tasks per plan, commits incrementally
-- **Critic**: Reviews output against spec, constitution, and verification requirements
-- **PR Creation**: Only on Critic `verdict=pass`; run summary attached to PR
+- **Reviewer**: Reviews output against spec, constitution, and verification requirements
+- **PR Creation**: Only on Reviewer `verdict=pass`; run summary attached to PR
 
 Phases emit structured events to stdout:
 
@@ -81,9 +81,9 @@ pipeline and MUST NOT exceed its scope.
 |---------|-------|--------|
 | **Planner** | Reads spec; produces plan.md and tasks.md | Implementation contract |
 | **Builder** | Executes tasks per plan; commits incrementally | Working code + commits |
-| **Critic** | Verifies output against spec, constitution, gates | `verdict=pass` or escalation |
+| **Reviewer** | Verifies output against spec, constitution, gates | `verdict=pass` or escalation |
 
-Personas share no state except through phase artifacts. The Critic's verdict is final —
+Personas share no state except through phase artifacts. The Reviewer's verdict is final —
 it cannot be overridden by the Planner or Builder.
 
 ## Governance
@@ -96,6 +96,6 @@ it cannot be overridden by the Planner or Builder.
 - PATCH bump: clarification, wording, or non-semantic refinement.
 - All PRs produced by bureau MUST include a constitution compliance section in the
   run summary. CRITICAL findings block PR creation.
-- Constitution compliance is reviewed on every Critic pass.
+- Constitution compliance is reviewed on every Reviewer pass.
 
 **Version**: 1.0.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-16
