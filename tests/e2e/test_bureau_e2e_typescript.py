@@ -84,7 +84,7 @@ def _assert_phase_order(stdout: str) -> None:
 
 @pytest.mark.timeout(650)
 def test_smoke_typescript(bureau_test_typescript_repo):
-    spec_path = str(Path(bureau_test_typescript_repo) / "specs" / "001-smoke-hello-world" / "spec.md")
+    spec_path = str(Path(bureau_test_typescript_repo) / "specs" / "001-typed-emitter" / "spec.md")
     result = run_bureau(spec_path, bureau_test_typescript_repo)
     _write_bureau_artifact(result.stdout)
 
