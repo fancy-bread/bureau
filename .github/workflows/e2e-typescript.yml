@@ -47,7 +47,7 @@ jobs:
           sleep 5
 
       - name: Run E2E tests
-        run: pytest tests/e2e/ -v --timeout=650 -k "typescript"
+        run: pytest tests/e2e/test_bureau_e2e_typescript.py -v --timeout=650
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BUREAU_TEST_REPO_TYPESCRIPT: ${{ github.workspace }}/bureau-test-typescript
