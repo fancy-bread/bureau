@@ -55,11 +55,9 @@ def parse_repo_config(repo_path: str) -> RepoContext:
         test_cmd=runtime["test_cmd"],
         build_cmd=runtime.get("build_cmd", ""),
         lint_cmd=runtime.get("lint_cmd", ""),
-        constitution_path=bureau_section.get("constitution"),
         max_builder_attempts=max_ba,
         max_ralph_rounds=max_rr,
         command_timeout=cmd_timeout,
-        planner_model=bureau_section.get("planner_model", "claude-opus-4-7"),
         builder_model=bureau_section.get("builder_model", "claude-sonnet-4-6"),
         reviewer_model=bureau_section.get("reviewer_model", "claude-opus-4-7"),
     )

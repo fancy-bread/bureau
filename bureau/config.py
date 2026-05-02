@@ -3,12 +3,10 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 
 @dataclass
 class BureauConfig:
-    planner_model: str = "claude-opus-4-7"
     builder_model: str = "claude-sonnet-4-6"
     reviewer_model: str = "claude-opus-4-7"
     github_token_env: str = "GITHUB_TOKEN"
@@ -43,7 +41,6 @@ def load_bureau_config(path: str | None = None) -> BureauConfig:
     ralph_loop = data.get("ralph_loop", {})
 
     return BureauConfig(
-        planner_model=models.get("planner", bureau.get("planner_model", "claude-opus-4-7")),
         builder_model=models.get("builder", bureau.get("builder_model", "claude-sonnet-4-6")),
         reviewer_model=models.get("reviewer", bureau.get("reviewer_model", "claude-opus-4-7")),
         github_token_env=github.get("token_env", "GITHUB_TOKEN"),
@@ -57,12 +54,14 @@ def load_bureau_config(path: str | None = None) -> BureauConfig:
 _BUNDLED_CONSTITUTION = Path(__file__).parent / "data" / "constitution.md"
 
 
-def load_constitution(repo_path: str, repo_context: Any = None) -> str:
-    """Return the project-specific constitution if configured, otherwise the bundled default."""
-    if repo_context and getattr(repo_context, "constitution_path", None):
-        custom = Path(repo_path) / repo_context.constitution_path
-        if custom.exists():
-            return custom.read_text(encoding="utf-8")
+_SPECKIT_CONSTITUTION = ".specify/memory/constitution.md"
+
+
+def load_constitution(repo_path: str) -> str:
+    """Return the repo's speckit constitution if present, otherwise the bundled default."""
+    speckit = Path(repo_path) / _SPECKIT_CONSTITUTION
+    if speckit.exists():
+        return speckit.read_text(encoding="utf-8")
 
     if _BUNDLED_CONSTITUTION.exists():
         return _BUNDLED_CONSTITUTION.read_text(encoding="utf-8")

@@ -11,11 +11,11 @@ def _make_state(**overrides):
     return {**state, **overrides}
 
 
-def test_memory_node_advances_to_planner():
+def test_memory_node_advances_to_tasks_loader():
     state = _make_state()
     with patch("bureau.nodes.memory_node.Memory"):
         result = memory_node(state)
-    assert result["phase"] == Phase.PLANNER
+    assert result["phase"] == Phase.TASKS_LOADER
 
 
 def test_memory_node_writes_spec_name_when_spec_present():

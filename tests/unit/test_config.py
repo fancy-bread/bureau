@@ -30,12 +30,9 @@ def test_load_bureau_config_missing_file(tmp_path):
 
 def test_load_bureau_config_from_file(tmp_path):
     toml = tmp_path / "bureau.toml"
-    toml.write_text(
-        "[models]\nplanner = 'claude-opus-4-7'\n"
-        "[ralph_loop]\nmax_builder_attempts = 5\n"
-    )
+    toml.write_text("[models]\nbuilder = 'claude-sonnet-4-6'\n[ralph_loop]\nmax_builder_attempts = 5\n")
     cfg = load_bureau_config(str(toml))
-    assert cfg.planner_model == "claude-opus-4-7"
+    assert cfg.builder_model == "claude-sonnet-4-6"
     assert cfg.max_builder_attempts == 5
 
 
@@ -45,13 +42,10 @@ def test_load_constitution_returns_empty_when_absent(tmp_path):
     assert isinstance(result, str)
 
 
-def test_load_constitution_custom_path(tmp_path):
-    const = tmp_path / ".bureau" / "constitution.md"
-    const.parent.mkdir()
+def test_load_constitution_speckit_path(tmp_path):
+    const = tmp_path / ".specify" / "memory" / "constitution.md"
+    const.parent.mkdir(parents=True)
     const.write_text("# Custom\nDo the right thing.")
 
-    class FakeContext:
-        constitution_path = ".bureau/constitution.md"
-
-    result = load_constitution(str(tmp_path), FakeContext())
+    result = load_constitution(str(tmp_path))
     assert "Custom" in result

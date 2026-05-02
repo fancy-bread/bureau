@@ -9,7 +9,6 @@ class Phase(StrEnum):
     VALIDATE_SPEC = "validate_spec"
     REPO_ANALYSIS = "repo_analysis"
     MEMORY = "memory"
-    PLANNER = "planner"
     TASKS_LOADER = "tasks_loader"
     BUILDER = "builder"
     REVIEWER = "reviewer"
@@ -81,11 +80,9 @@ class RepoContext:
     test_cmd: str
     build_cmd: str = ""
     lint_cmd: str = ""
-    constitution_path: Optional[str] = None
     max_builder_attempts: int = 3
     max_ralph_rounds: int = 3
     command_timeout: int = 300
-    planner_model: str = "claude-opus-4-7"
     builder_model: str = "claude-sonnet-4-6"
     reviewer_model: str = "claude-opus-4-7"
 
@@ -118,8 +115,11 @@ class RunState(dict):
 
 
 def make_initial_state(
-    run_id: str, spec_path: str, repo_path: str,
-    spec_folder: str = "", tasks_path: str = "",
+    run_id: str,
+    spec_path: str,
+    repo_path: str,
+    spec_folder: str = "",
+    tasks_path: str = "",
 ) -> dict[str, Any]:
     return {
         "run_id": run_id,

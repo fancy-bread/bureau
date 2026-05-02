@@ -92,4 +92,3 @@ def test_optional_fields_default_to_empty(tmp_path):
     ctx = parse_repo_config(str(tmp_path))
     assert ctx.build_cmd == ""
     assert ctx.lint_cmd == ""
-    assert ctx.constitution_path is None

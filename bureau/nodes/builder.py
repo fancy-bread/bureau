@@ -25,7 +25,7 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     ralph_round = state.get("ralph_round", 0)
 
     spec_text = state.get("spec_text") or Path(spec_path).read_text(encoding="utf-8")
-    constitution = load_constitution(repo_path, repo_context)
+    constitution = load_constitution(repo_path)
 
     max_attempts = repo_context.max_builder_attempts if repo_context else 3
     test_cmd = repo_context.test_cmd if repo_context else "pytest"
