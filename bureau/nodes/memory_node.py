@@ -14,4 +14,4 @@ def memory_node(state: dict[str, Any]) -> dict[str, Any]:
         if state.get("spec"):
             mem.write("spec_summary", state["spec"].name)
 
-    return {**state, "phase": Phase.PLANNER}
+    return {**state, "phase": Phase.TASKS_LOADER}

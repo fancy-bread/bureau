@@ -43,7 +43,7 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
     review_skill = _load_review_skill(_SKILLS_ROOT)
 
     spec_text = state.get("spec_text") or Path(spec_path).read_text(encoding="utf-8")
-    constitution = load_constitution(repo_path, repo_context)
+    constitution = load_constitution(repo_path)
     model = repo_context.reviewer_model if repo_context else "claude-opus-4-7"
     timeout = repo_context.command_timeout if repo_context else 300
 
