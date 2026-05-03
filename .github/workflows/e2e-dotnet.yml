@@ -1,0 +1,66 @@
+name: E2E Tests (.NET)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e-dotnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout bureau
+        uses: actions/checkout@v4
+        with:
+          path: .
+
+      - name: Checkout bureau-test-dotnet
+        uses: actions/checkout@v4
+        with:
+          repository: fancy-bread/bureau-test-dotnet
+          path: bureau-test-dotnet
+          token: ${{ secrets.BUREAU_TEST_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Configure git identity and credentials
+        run: |
+          git config --global user.email "bureau-ci@github-actions"
+          git config --global user.name "Bureau CI"
+          git config --global url."https://x-access-token:${{ secrets.BUREAU_TEST_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Install bureau with dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Start Redpanda
+        run: |
+          docker run -d -p 9092:9092 --name bureau-kafka \
+            redpandadata/redpanda:latest \
+            redpanda start --smp 1 --overprovisioned
+          sleep 5
+
+      - name: Run E2E tests
+        run: pytest tests/e2e/test_bureau_e2e_dotnet.py -v --timeout=1800
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BUREAU_TEST_REPO_DOTNET: ${{ github.workspace }}/bureau-test-dotnet
+          GH_TOKEN: ${{ secrets.BUREAU_TEST_PAT }}
+          BUREAU_OUTPUT_FORMAT: cloudevents
+          BUREAU_SOURCE_URI: https://github.com/${{ github.repository }}
+          BUREAU_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+      - name: Upload bureau run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bureau-run-artifacts-dotnet
+          path: bureau-artifacts/
+          retention-days: 7
+          if-no-files-found: ignore

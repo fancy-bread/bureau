@@ -1,4 +1,4 @@
-.PHONY: ci lint test test-cov test-e2e bureau-kafka-up bureau-kafka-down test-kafka-smoke test-kafka-smoke-ts
+.PHONY: ci lint test test-cov test-e2e bureau-kafka-up bureau-kafka-down test-kafka-smoke test-kafka-smoke-ts test-kafka-smoke-dotnet
 
 ci: lint test
 
@@ -31,3 +31,8 @@ test-kafka-smoke-ts:
 	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
 		bureau run ../bureau-test-typescript/specs/001-typed-emitter/spec.md \
 		--repo ../bureau-test-typescript
+
+test-kafka-smoke-dotnet:
+	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
+		bureau run ../bureau-test-dotnet/specs/001-kafka-observability-dashboard/spec.md \
+		--repo ../bureau-test-dotnet

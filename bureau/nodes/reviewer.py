@@ -25,6 +25,11 @@ def _load_review_skill(skills_root: Path) -> str:
 
 
 def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
+    # If the builder already escalated, pass through without running the review.
+    # The unconditional builder→reviewer edge means escalated state always arrives here.
+    if state.get("_route") == "escalate" and state.get("escalations"):
+        return state
+
     run_id = state["run_id"]
     spec_path = state["spec_path"]
     repo_path = state["repo_path"]
@@ -71,8 +76,8 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
             if not pipeline_result.passed:
                 phase_name = pipeline_result.failed_phase.value
                 finding = ReviewerFinding(
-                    type="requirement",
-                    ref_id="FR-009",
+                    type="pipeline",
+                    ref_id="PIPELINE",
                     verdict="unmet",
                     detail=(
                         f"Reviewer independent pipeline failed at {phase_name} phase: "
@@ -96,8 +101,8 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
     if not files_changed:
         pre_findings.append(
             ReviewerFinding(
-                type="requirement",
-                ref_id="FR-006",
+                type="pipeline",
+                ref_id="FILES-MISSING",
                 verdict="unmet",
                 detail="No files_changed in builder summary; implementation cannot be verified.",
                 remediation="Builder must populate files_changed in memory scratchpad.",
@@ -111,8 +116,8 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
             else:
                 pre_findings.append(
                     ReviewerFinding(
-                        type="requirement",
-                        ref_id="FR-006",
+                        type="pipeline",
+                        ref_id="FILES-MISSING",
                         verdict="unmet",
                         detail=f"File {rel_path} listed in files_changed but not found on disk.",
                         remediation="Builder must write all files it lists in files_changed.",

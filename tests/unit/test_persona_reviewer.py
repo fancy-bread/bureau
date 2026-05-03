@@ -125,6 +125,40 @@ def test_run_reviewer_forces_escalate_on_constitution_violation():
     assert result.verdict == "escalate"
 
 
+def test_run_reviewer_strips_hallucinated_fr_ids():
+    """LLM findings with FR IDs not in the spec are stripped; verdict is recalculated."""
+    spec_text = "# My Feature\n\n## Requirements\n\n- **FR-001**: Do X.\n- **FR-002**: Do Y.\n"
+
+    def _f(ref_id, verdict, detail):
+        return {
+            "type": "requirement",
+            "ref_id": ref_id,
+            "verdict": verdict,
+            "detail": detail,
+            "remediation": "" if verdict == "met" else "Fix it.",
+        }
+
+    hallucinated = {
+        "verdict": "revise",
+        "findings": [_f("FR-001", "met", "Done."), _f("FR-009", "unmet", "Made up.")],
+        "summary": "FR-009 unmet.",
+        "round": 0,
+    }
+    client = _make_client(hallucinated)
+    result = run_reviewer(
+        client=client,
+        spec_text=spec_text,
+        constitution="",
+        builder_summary="Done.",
+        ralph_round=0,
+        model="claude-opus-4-7",
+    )
+    fr_ids = {f.ref_id for f in result.findings}
+    assert "FR-009" not in fr_ids
+    assert "FR-001" in fr_ids
+    assert result.verdict == "pass"
+
+
 def test_run_reviewer_passes_fr_lines_to_prompt():
     """Reviewer extracts FR lines from spec_text for the prompt."""
     spec_text = (
