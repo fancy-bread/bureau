@@ -20,6 +20,11 @@ SKIP_NO_TYPESCRIPT_REPO = pytest.mark.skipif(
     reason="BUREAU_TEST_REPO_TYPESCRIPT not set",
 )
 
+SKIP_NO_DOTNET_REPO = pytest.mark.skipif(
+    not os.environ.get("BUREAU_TEST_REPO_DOTNET"),
+    reason="BUREAU_TEST_REPO_DOTNET not set",
+)
+
 SKIP_NO_KEY = pytest.mark.skipif(
     not (
         os.environ.get("ANTHROPIC_API_KEY")
@@ -67,6 +72,27 @@ def bureau_test_typescript_repo(_bureau_test_typescript_repo_path):
         ["git", "-C", _bureau_test_typescript_repo_path, "reset", "--hard", "origin/main"], check=True
     )
     return _bureau_test_typescript_repo_path
+
+
+@pytest.fixture(scope="session")
+def _bureau_test_dotnet_repo_path():
+    repo_path = os.environ.get("BUREAU_TEST_REPO_DOTNET")
+    assert repo_path, "BUREAU_TEST_REPO_DOTNET must be set"
+    assert Path(repo_path).exists(), f"BUREAU_TEST_REPO_DOTNET path does not exist: {repo_path}"
+    subprocess.run(["git", "-C", repo_path, "checkout", "main"], check=True)
+    subprocess.run(["git", "-C", repo_path, "pull"], check=True)
+    yield repo_path
+    subprocess.run(["git", "-C", repo_path, "checkout", "main"], check=False)
+
+
+@pytest.fixture()
+def bureau_test_dotnet_repo(_bureau_test_dotnet_repo_path):
+    """Reset to main before each test so stale feature branches don't bleed across tests."""
+    subprocess.run(["git", "-C", _bureau_test_dotnet_repo_path, "checkout", "main"], check=True)
+    subprocess.run(
+        ["git", "-C", _bureau_test_dotnet_repo_path, "reset", "--hard", "origin/main"], check=True
+    )
+    return _bureau_test_dotnet_repo_path
 
 
 def bureau_exe() -> str:

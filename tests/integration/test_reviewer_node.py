@@ -97,6 +97,29 @@ def _base_state(tmp_path, run_id: str = "run-r-001") -> dict:
     return state
 
 
+def test_reviewer_node_passes_through_builder_escalation(tmp_path):
+    """Builder escalation must not be overwritten by the reviewer."""
+    state = _base_state(tmp_path)
+    from bureau.state import Escalation, EscalationReason, Phase
+
+    escalation = Escalation(
+        run_id="run-r-001",
+        phase=Phase.BUILDER,
+        reason=EscalationReason.RALPH_EXHAUSTED,
+        what_happened="install_cmd failed",
+        what_is_needed="Fix install_cmd",
+        options=[],
+        timestamp="2026-01-01T00:00:00+00:00",
+    )
+    state["_route"] = "escalate"
+    state["escalations"] = [escalation]
+
+    result = reviewer_node(state)
+
+    assert result["_route"] == "escalate"
+    assert result["escalations"] == [escalation]
+
+
 def test_reviewer_node_pass_routes_to_pr_create(tmp_path):
     state = _base_state(tmp_path)
 
@@ -187,7 +210,7 @@ def test_reviewer_node_revises_when_independent_pipeline_fails(tmp_path):
 
     assert result["_route"] == "revise"
     findings = result["reviewer_findings"]
-    assert any(f["ref_id"] == "FR-009" for f in findings)
+    assert any(f["ref_id"] == "PIPELINE" for f in findings)
     assert any("test" in f["detail"] for f in findings)
 
 
@@ -241,7 +264,7 @@ def test_reviewer_node_revises_when_no_files_changed(tmp_path):
 
     assert result["_route"] == "revise"
     findings = result["reviewer_findings"]
-    assert any(f["ref_id"] == "FR-006" for f in findings)
+    assert any(f["ref_id"] == "FILES-MISSING" for f in findings)
 
 
 def test_reviewer_node_reads_changed_files_for_review(tmp_path):

@@ -92,8 +92,8 @@ def run_reviewer(
         if _is_test_file(path) and not has_assertions(content):
             quality_findings.append(
                 ReviewerFinding(
-                    type="requirement",
-                    ref_id="FR-007",
+                    type="pipeline",
+                    ref_id="TEST-QUALITY",
                     verdict="unmet",
                     detail=(
                         f"{path}: no assertions found. Test body appears trivially passing "
@@ -116,6 +116,7 @@ def run_reviewer(
 
     fr_lines = [line.strip() for line in spec_text.splitlines() if _FR_LINE.match(line.strip())]
     fr_list = "\n".join(fr_lines) if fr_lines else spec_text
+    _known_fr_ids = {m.group() for line in fr_lines for m in [re.search(r"FR-\d{3}", line)] if m}
 
     system = _SYSTEM_TEMPLATE.format(
         constitution=constitution,
@@ -150,6 +151,22 @@ def run_reviewer(
     json_text = m.group(0) if m else final_text.strip()
 
     verdict = ReviewerVerdict.model_validate(json.loads(json_text))
+
+    # Strip findings whose ref_id looks like an FR but isn't in this spec.
+    # Prevents the LLM from hallucinating FR IDs that don't exist.
+    _fr_ref = re.compile(r"^FR-\d+$")
+    if _known_fr_ids:
+        valid = [f for f in verdict.findings if not _fr_ref.match(f.ref_id) or f.ref_id in _known_fr_ids]
+        if len(valid) < len(verdict.findings):
+            has_violation = any(f.verdict == "violation" for f in valid)
+            has_unmet = any(f.verdict == "unmet" for f in valid)
+            new_v = "escalate" if has_violation else "revise" if has_unmet else "pass"
+            verdict = ReviewerVerdict(
+                verdict=new_v,
+                findings=valid,
+                summary=verdict.summary,
+                round=verdict.round,
+            )
 
     if any(f.verdict == "violation" for f in verdict.findings):
         return ReviewerVerdict(
