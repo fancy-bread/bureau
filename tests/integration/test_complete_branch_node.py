@@ -31,6 +31,8 @@ def repo_with_remote(tmp_path: Path):
 
     _git(["git", "init", "--bare"], bare)
     _git(["git", "init"], repo)
+    _git(["git", "config", "user.email", "test@bureau.test"], repo)
+    _git(["git", "config", "user.name", "Bureau Test"], repo)
     _git(["git", "remote", "add", "origin", str(bare)], repo)
 
     (repo / "README.md").write_text("scaffold\n")
