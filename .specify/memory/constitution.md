@@ -1,6 +1,26 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.2.0 → 1.3.0
+Modified sections: Development Workflow (Builder bullet), Agent Personas (Builder row)
+Added: N/A
+Removed: N/A
+Rationale (PATCH): Clarifies the Builder's commit obligation. "Commits incrementally" was
+  underspecified — it did not define when commits must occur. Observed runs confirm that
+  phase-end commits are the correct model: they create a recoverable history, scope each
+  commit to a reviewable unit of work, and give the Reviewer a meaningful diff. A single
+  en-masse commit at run end is now explicitly non-compliant.
+Templates reviewed:
+  - .specify/templates/plan-template.md ✅ No conflicts
+  - .specify/templates/spec-template.md ✅ No conflicts
+  - .specify/templates/tasks-template.md ✅ Update recommended: checkpoint tasks should
+    reference "Builder verifies and commits" rather than "Reviewer reviews phase"
+Follow-up TODOs: Update tasks-template.md checkpoint task wording.
+
+---
+
+SYNC IMPACT REPORT
+==================
 Version change: 1.1.0 → 1.2.0
 Modified sections: Principle III (body text), Development Workflow (phase sequence), Agent Personas (table)
 Added: N/A
@@ -89,7 +109,11 @@ no phase may be skipped.
 
 - **Entry gate**: Approved spec at `specs/[###-feature-name]/spec.md` with `tasks.md` produced by the speckit pipeline
 - **Tasks Loader**: Reads tasks.md from spec folder; builds task list for Builder
-- **Builder**: Implements tasks per plan, commits incrementally
+- **Builder**: Implements tasks per plan. After each spec phase passes its verification
+  gate, the Builder MUST commit with a message identifying the phase (e.g.,
+  `feat: phase 1 — solution scaffold`). Phase-end commits are the required model —
+  one commit per completed phase, not one commit per run. This creates a recoverable
+  history and gives the Reviewer a meaningful diff per phase.
 - **Reviewer**: Reviews output against spec, constitution, and verification requirements
 - **PR Creation**: Only on Reviewer `verdict=pass`; run summary attached to PR
 
@@ -114,7 +138,7 @@ pipeline and MUST NOT exceed its scope.
 | Persona | Scope | Output |
 |---------|-------|--------|
 | **Tasks Loader** | Reads tasks.md from spec folder; builds task list | Task list for Builder |
-| **Builder** | Executes tasks per plan; commits incrementally | Working code + commits |
+| **Builder** | Executes tasks per plan; commits after each phase passes its verification gate | Working code + phase-scoped commits |
 | **Reviewer** | Verifies output against spec, constitution, gates | `verdict=pass` or escalation |
 
 Personas share no state except through phase artifacts. The Reviewer's verdict is final —
@@ -132,4 +156,4 @@ it cannot be overridden by the Planner or Builder.
   run summary. CRITICAL findings block PR creation.
 - Constitution compliance is reviewed on every Reviewer pass.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-21
+**Version**: 1.3.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-05-03

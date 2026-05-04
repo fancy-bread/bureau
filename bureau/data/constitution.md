@@ -50,11 +50,15 @@ resumed. Resumability takes precedence over execution speed.
 Bureau executes runs as a sequenced phase pipeline. Phases MUST be honored in order;
 no phase may be skipped.
 
-**Phase sequence**: Planner → Builder → Reviewer → PR Creation
+**Phase sequence**: Tasks Loader → Builder → Reviewer → PR Creation
 
-- **Entry gate**: Approved spec at `specs/[###-feature-name]/spec.md`
-- **Planner**: Produces implementation plan and task breakdown
-- **Builder**: Implements tasks per plan, commits incrementally
+- **Entry gate**: Approved spec at `specs/[###-feature-name]/spec.md` with `tasks.md`
+- **Tasks Loader**: Reads tasks.md from spec folder; builds task list for Builder
+- **Builder**: Implements tasks per plan. After each spec phase passes its verification
+  gate, the Builder MUST commit with a message identifying the phase (e.g.,
+  `feat: phase 1 — solution scaffold`). Phase-end commits are the required model —
+  one commit per completed phase, not one commit per run. This creates a recoverable
+  history and gives the Reviewer a meaningful diff per phase.
 - **Reviewer**: Reviews output against spec, constitution, and verification requirements
 - **PR Creation**: Only on Reviewer `verdict=pass`; run summary attached to PR
 
@@ -79,18 +83,18 @@ pipeline and MUST NOT exceed its scope.
 
 | Persona | Scope | Output |
 |---------|-------|--------|
-| **Planner** | Reads spec; produces plan.md and tasks.md | Implementation contract |
-| **Builder** | Executes tasks per plan; commits incrementally | Working code + commits |
+| **Tasks Loader** | Reads tasks.md from spec folder; builds task list | Task list for Builder |
+| **Builder** | Executes tasks per plan; commits after each phase passes its verification gate | Working code + phase-scoped commits |
 | **Reviewer** | Verifies output against spec, constitution, gates | `verdict=pass` or escalation |
 
 Personas share no state except through phase artifacts. The Reviewer's verdict is final —
-it cannot be overridden by the Planner or Builder.
+it cannot be overridden by the Builder.
 
 ## Governance
 
 - This constitution supersedes all other development practices within bureau.
-- Amendments require: a version bump per semantic versioning, a Sync Impact Report
-  (embedded as an HTML comment), and updates to any affected templates.
+- Amendments require: a version bump per semantic versioning and updates to any affected
+  templates.
 - MAJOR bump: principle removal, redefinition, or backward-incompatible governance change.
 - MINOR bump: new principle or section added.
 - PATCH bump: clarification, wording, or non-semantic refinement.
@@ -98,4 +102,4 @@ it cannot be overridden by the Planner or Builder.
   run summary. CRITICAL findings block PR creation.
 - Constitution compliance is reviewed on every Reviewer pass.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-16
+**Version**: 1.3.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-05-03

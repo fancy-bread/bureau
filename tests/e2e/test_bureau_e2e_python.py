@@ -46,7 +46,8 @@ def _assert_phase_order(stdout: str) -> None:
         "validate_spec",
         "repo_analysis",
         "tasks_loader",
-        "git_commit",
+        "prepare_branch",
+        "complete_branch",
         "pr_create",
     ]
     started: dict[str, int] = {}

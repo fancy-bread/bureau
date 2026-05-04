@@ -216,7 +216,7 @@ def test_run_builder_attempt_passes_recursion_limit_in_config(tmp_path):
     _, kwargs = fake_agent.invoke.call_args
     assert "config" in kwargs
     assert "recursion_limit" in kwargs["config"]
-    assert kwargs["config"]["recursion_limit"] == 100  # 300 // 3
+    assert kwargs["config"]["recursion_limit"] == 500  # max(500, timeout)
 
 
 def test_run_builder_attempt_api_error_returns_failed_attempt(tmp_path):

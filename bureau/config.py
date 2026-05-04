@@ -58,12 +58,19 @@ _SPECKIT_CONSTITUTION = ".specify/memory/constitution.md"
 
 
 def load_constitution(repo_path: str) -> str:
-    """Return the repo's speckit constitution if present, otherwise the bundled default."""
-    speckit = Path(repo_path) / _SPECKIT_CONSTITUTION
-    if speckit.exists():
-        return speckit.read_text(encoding="utf-8")
+    """Return the bureau runtime constitution plus any repo-specific constitution.
+
+    The bundled constitution always applies — it contains the non-negotiable runtime
+    rules (phase-end commits, escalation behaviour, verification gates). If the target
+    repo has a speckit constitution, it is appended so the Builder respects both.
+    """
+    parts: list[str] = []
 
     if _BUNDLED_CONSTITUTION.exists():
-        return _BUNDLED_CONSTITUTION.read_text(encoding="utf-8")
+        parts.append(_BUNDLED_CONSTITUTION.read_text(encoding="utf-8"))
 
-    return ""
+    speckit = Path(repo_path) / _SPECKIT_CONSTITUTION
+    if speckit.exists():
+        parts.append(speckit.read_text(encoding="utf-8"))
+
+    return "\n\n---\n\n".join(parts)
