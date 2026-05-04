@@ -22,6 +22,8 @@ RALPH_STARTED = "ralph.started"
 RALPH_ATTEMPT = "ralph.attempt"
 RALPH_COMPLETED = "ralph.completed"
 BUILDER_TOOL = "builder.tool"
+REVIEWER_PIPELINE = "reviewer.pipeline"
+REVIEWER_VERDICT = "reviewer.verdict"
 
 
 class OutputFormat(Enum):

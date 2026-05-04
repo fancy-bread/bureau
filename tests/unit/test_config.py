@@ -42,10 +42,12 @@ def test_load_constitution_returns_empty_when_absent(tmp_path):
     assert isinstance(result, str)
 
 
-def test_load_constitution_speckit_path(tmp_path):
+def test_load_constitution_includes_both_bundled_and_repo(tmp_path):
     const = tmp_path / ".specify" / "memory" / "constitution.md"
     const.parent.mkdir(parents=True)
-    const.write_text("# Custom\nDo the right thing.")
+    const.write_text("# Project Rules\nDo the right thing.")
 
     result = load_constitution(str(tmp_path))
-    assert "Custom" in result
+    assert "Project Rules" in result
+    # bundled constitution is always included alongside the repo-specific one
+    assert "Bureau Constitution" in result

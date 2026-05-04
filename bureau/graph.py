@@ -9,10 +9,11 @@ from langgraph.graph import END, StateGraph
 
 from bureau.config import BureauConfig
 from bureau.nodes.builder import builder_node
+from bureau.nodes.complete_branch import complete_branch_node
 from bureau.nodes.escalate import escalate_node
-from bureau.nodes.git_commit import git_commit_node
 from bureau.nodes.memory_node import memory_node
 from bureau.nodes.pr_create import pr_create_node
+from bureau.nodes.prepare_branch import prepare_branch_node
 from bureau.nodes.repo_analysis import repo_analysis_node
 from bureau.nodes.reviewer import reviewer_node
 from bureau.nodes.tasks_loader import tasks_loader_node
@@ -27,11 +28,15 @@ def _route_tasks_loader(state: dict[str, Any]) -> str:
     return state.get("_route", "ok")
 
 
+def _route_prepare_branch(state: dict[str, Any]) -> str:
+    return state.get("_route", "ok")
+
+
 def _route_reviewer(state: dict[str, Any]) -> str:
     return state.get("_route", "pass")  # reviewer_node sets _route: pass | revise | escalate
 
 
-def _route_git_commit(state: dict[str, Any]) -> str:
+def _route_complete_branch(state: dict[str, Any]) -> str:
     return state.get("_route", "ok")
 
 
@@ -45,9 +50,10 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     graph.add_node("repo_analysis", repo_analysis_node)
     graph.add_node("memory", memory_node)
     graph.add_node("tasks_loader", tasks_loader_node)
+    graph.add_node("prepare_branch", prepare_branch_node)
     graph.add_node("builder", builder_node)
     graph.add_node("reviewer", reviewer_node)
-    graph.add_node("git_commit", git_commit_node)
+    graph.add_node("complete_branch", complete_branch_node)
     graph.add_node("pr_create", pr_create_node)
     graph.add_node("escalate", escalate_node)
 
@@ -67,17 +73,22 @@ def build_graph(run_id: str, config: BureauConfig | None = None) -> Any:
     graph.add_conditional_edges(
         "tasks_loader",
         _route_tasks_loader,
+        {"ok": "prepare_branch", "escalate": "escalate"},
+    )
+    graph.add_conditional_edges(
+        "prepare_branch",
+        _route_prepare_branch,
         {"ok": "builder", "escalate": "escalate"},
     )
     graph.add_edge("builder", "reviewer")
     graph.add_conditional_edges(
         "reviewer",
         _route_reviewer,
-        {"pass": "git_commit", "revise": "builder", "escalate": "escalate"},
+        {"pass": "complete_branch", "revise": "builder", "escalate": "escalate"},
     )
     graph.add_conditional_edges(
-        "git_commit",
-        _route_git_commit,
+        "complete_branch",
+        _route_complete_branch,
         {"ok": "pr_create", "escalate": "escalate"},
     )
     graph.add_edge("pr_create", END)

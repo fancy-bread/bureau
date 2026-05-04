@@ -189,6 +189,44 @@ def test_builder_node_escalates_on_build_gate_failure(tmp_path):
     assert "build" in esc.what_happened
 
 
+def test_builder_node_gates_only_run_on_first_attempt(tmp_path):
+    """Gate failure on attempt 1+ must not escalate — builder broke its own baseline."""
+    (tmp_path / "spec.md").write_text("# Test\n")
+    skills_root = _make_skills_root(tmp_path)
+
+    repo_context = RepoContext(
+        language="python",
+        base_image="python:3.14-slim",
+        install_cmd="",
+        test_cmd="pytest",
+        build_cmd="tsc --noEmit",
+        max_builder_attempts=2,
+    )
+    state = make_initial_state("run-b-gate-retry", str(tmp_path / "spec.md"), str(tmp_path))
+    state["repo_context"] = repo_context
+    state["spec_text"] = "# Test\n"
+    state["task_plan"] = _TASK_PLAN
+
+    passing_gate = PipelineResult(passed=True, phases_run=[PipelinePhase.BUILD])
+
+    pipeline_calls = []
+
+    def _track_pipeline(repo_path, phases, timeout):
+        pipeline_calls.append(len(pipeline_calls))
+        return passing_gate
+
+    with (
+        patch("bureau.nodes.builder.run_pipeline", side_effect=_track_pipeline),
+        patch("bureau.personas.builder.create_deep_agent", return_value=_make_agent(exit_code=0)),
+        patch("bureau.nodes.builder.Memory"),
+        patch("bureau.nodes.builder._SKILLS_ROOT", skills_root),
+    ):
+        result = builder_node(state)
+
+    assert len(pipeline_calls) == 1, "Gate must only run on attempt 0, not on attempt 1"
+    assert result.get("_route") != "escalate"
+
+
 def test_builder_node_skips_gates_when_lint_build_empty(tmp_path):
     (tmp_path / "spec.md").write_text("# Test\n")
     skills_root = _make_skills_root(tmp_path)

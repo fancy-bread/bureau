@@ -150,8 +150,9 @@ def run_builder_attempt(
     )
 
     # Cap agent steps to prevent unbounded loops; deepagents defaults to 9999.
-    # At ~2-3s per API call, 120 steps ≈ 5-6 minutes, well within the timeout.
-    step_limit = max(20, timeout // 3)
+    # command_timeout is a per-shell-command ceiling, not a step budget — don't conflate.
+    # Complex specs need 200-300+ steps; 500 is a safe ceiling that still prevents runaway agents.
+    step_limit = max(500, timeout)
 
     try:
         result: dict[str, Any] = agent.invoke(

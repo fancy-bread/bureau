@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -73,6 +74,13 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
         active_phases = [(p, cmd) for p, cmd in all_phases if cmd.strip()]
         if active_phases:
             pipeline_result = run_pipeline(repo_path, active_phases, timeout)
+            failed = pipeline_result.failed_phase.value if pipeline_result.failed_phase else None
+            events.emit(
+                events.REVIEWER_PIPELINE,
+                passed=pipeline_result.passed,
+                phases=[p.value for p in pipeline_result.phases_run],
+                failed_phase=failed,
+            )
             if not pipeline_result.passed:
                 phase_name = pipeline_result.failed_phase.value
                 finding = ReviewerFinding(
@@ -93,8 +101,11 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
                 )
                 return _process_verdict(state, revise_verdict, ralph_round, repo_context)
 
-    # Read changed files from memory scratchpad (FR-006)
-    files_changed = summary_dict.get("files_changed", []) if isinstance(summary_dict, dict) else []
+    # Derive changed files from git diff against main — captures all builder commits on the branch.
+    # Falls back to memory scratchpad if git diff is unavailable.
+    files_changed = _git_diff_files(repo_path) or (
+        summary_dict.get("files_changed", []) if isinstance(summary_dict, dict) else []
+    )
     file_contents: dict[str, str] = {}
     pre_findings: list[ReviewerFinding] = []
 
@@ -104,8 +115,9 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
                 type="pipeline",
                 ref_id="FILES-MISSING",
                 verdict="unmet",
-                detail="No files_changed in builder summary; implementation cannot be verified.",
-                remediation="Builder must populate files_changed in memory scratchpad.",
+                detail="No changed files found via git diff or builder summary; "
+                "implementation cannot be verified.",
+                remediation="Ensure the feature branch has commits ahead of main.",
             )
         )
     else:
@@ -198,6 +210,14 @@ def _process_verdict(
     mem = Memory(run_id)
     mem.write("reviewer_findings", [f.model_dump() for f in verdict.findings])
 
+    events.emit(
+        events.REVIEWER_VERDICT,
+        verdict=verdict.verdict,
+        round=ralph_round,
+        summary=verdict.summary,
+        findings=[{"ref_id": f.ref_id, "verdict": f.verdict, "type": f.type} for f in verdict.findings],
+    )
+
     updated_state = {
         **state,
         "ralph_rounds": existing_ralph_rounds,
@@ -237,6 +257,27 @@ def _process_verdict(
         "phase": Phase.BUILDER,
         "_route": "revise",
     }
+
+
+def _git_diff_files(repo_path: str) -> list[str]:
+    """Return files changed on the current branch vs. main using three-dot diff.
+
+    Uses `git diff main...HEAD --name-only` which finds the common ancestor and
+    returns only files touched on the feature branch — robust to incremental builder
+    commits and unrelated main-branch advances.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", repo_path, "diff", "main...HEAD", "--name-only", "--diff-filter=ACMR"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            return []
+        return [f.strip() for f in result.stdout.splitlines() if f.strip()]
+    except Exception:
+        return []
 
 
 def _format_builder_summary(summary: dict) -> str:

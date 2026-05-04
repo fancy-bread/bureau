@@ -11,54 +11,34 @@ from bureau import events
 from bureau.state import Escalation, EscalationReason, Phase
 
 
-def git_commit_node(state: dict[str, Any]) -> dict[str, Any]:
-    with events.phase(Phase.GIT_COMMIT):
+def complete_branch_node(state: dict[str, Any]) -> dict[str, Any]:
+    with events.phase(Phase.COMPLETE_BRANCH):
         run_id = state["run_id"]
         repo_path = state["repo_path"]
+        branch_name = state["branch_name"]
         spec = state.get("spec")
 
         if spec:
             raw_name = spec.name
         else:
-            # Use parent dir name (e.g. "001-smoke-hello-world"), strip leading "NNN-" prefix
             parent = Path(state["spec_path"]).parent.name
             raw_name = re.sub(r"^\d+-", "", parent)
         spec_name = re.sub(r"[^a-z0-9]+", "-", raw_name.lower()).strip("-")[:40]
-
         run_id_prefix = run_id.removeprefix("run-")[:8]
-
-        branch_name = f"feat/{spec_name}-{run_id_prefix}"
-        for attempt in range(1, 4):
-            candidate = branch_name if attempt == 1 else f"{branch_name}-{attempt}"
-            result = subprocess.run(
-                ["git", "-C", repo_path, "checkout", "-b", candidate],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0:
-                branch_name = candidate
-                break
-            if "already exists" in result.stderr:
-                continue
-            return _escalate(
-                state,
-                f"git checkout -b failed: {result.stderr.strip()}",
-                EscalationReason.GIT_BRANCH_EXISTS,
-            )
-        else:
-            return _escalate(
-                state,
-                f"Branch name collision after 3 attempts: {branch_name}",
-                EscalationReason.GIT_BRANCH_EXISTS,
-            )
 
         subprocess.run(["git", "-C", repo_path, "add", "-A"], check=True)
 
-        commit_msg = f"feat: {spec_name} [bureau/{run_id_prefix}]"
-        subprocess.run(
-            ["git", "-C", repo_path, "commit", "-m", commit_msg],
-            check=True,
+        # Builder may have committed everything incrementally — only commit if there are staged changes.
+        status = subprocess.run(
+            ["git", "-C", repo_path, "diff", "--cached", "--quiet"],
+            capture_output=True,
         )
+        if status.returncode != 0:
+            commit_msg = f"feat: {spec_name} [bureau/{run_id_prefix}]"
+            subprocess.run(
+                ["git", "-C", repo_path, "commit", "-m", commit_msg],
+                check=True,
+            )
 
         _git_env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
         try:
@@ -82,13 +62,13 @@ def git_commit_node(state: dict[str, Any]) -> dict[str, Any]:
                 EscalationReason.GIT_PUSH_FAILED,
             )
 
-    return {**state, "branch_name": branch_name, "phase": Phase.PR_CREATE, "_route": "ok"}
+    return {**state, "phase": Phase.PR_CREATE, "_route": "ok"}
 
 
 def _escalate(state: dict[str, Any], what_happened: str, reason: EscalationReason) -> dict[str, Any]:
     escalation = Escalation(
         run_id=state["run_id"],
-        phase=Phase.GIT_COMMIT,
+        phase=Phase.COMPLETE_BRANCH,
         reason=reason,
         what_happened=what_happened,
         what_is_needed="Resolve the git issue in the target repo before retrying.",

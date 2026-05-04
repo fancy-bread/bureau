@@ -65,7 +65,7 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
 
     passed = False
     for attempt_num in range(max_attempts):
-        if active_gates:
+        if active_gates and attempt_num == 0:
             gate_result = run_pipeline(repo_path, active_gates, timeout)
             if not gate_result.passed:
                 phase_name = gate_result.failed_phase.value

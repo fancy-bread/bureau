@@ -253,6 +253,7 @@ def test_reviewer_node_revises_when_no_files_changed(tmp_path):
 
     with (
         patch("bureau.nodes.reviewer.run_pipeline", return_value=_passing_pipeline()),
+        patch("bureau.nodes.reviewer._git_diff_files", return_value=[]),
         patch("bureau.nodes.reviewer.Memory") as mock_mem_cls,
         patch("bureau.nodes.reviewer.anthropic.Anthropic"),
     ):
