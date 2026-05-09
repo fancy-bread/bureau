@@ -45,3 +45,6 @@ bureau.toml.local
 .vscode/
 *.swp
 
+# MkDocs build output
+site/
+

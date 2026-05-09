@@ -1,0 +1,152 @@
+site_name: Bureau
+site_description: Autonomous ASDLC runtime — spec file in, pull request out
+site_author: Paul Marcotte
+site_url: https://fancy-bread.github.io/bureau
+
+repo_name: fancy-bread/bureau
+repo_url: https://github.com/fancy-bread/bureau
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+  features:
+    # Navigation
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+
+    # Search
+    - search.suggest
+    - search.highlight
+    - search.share
+
+    # Table of contents
+    - toc.follow
+    - toc.integrate
+
+    # Content
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+    - Config Reference: getting-started/config-reference.md
+
+  - Concepts:
+    - concepts/index.md
+    - The RALPH Loop: concepts/ralph-loop.md
+    - Pipeline Phases: concepts/pipeline-phases.md
+    - Constitution: concepts/constitution.md
+    - Escalation: concepts/escalation.md
+
+  - How-To:
+    - how-to/index.md
+    - Run Bureau: how-to/run-bureau.md
+    - Prepare a Repo: how-to/prepare-a-repo.md
+    - Write a Spec: how-to/write-a-spec.md
+    - Monitor a Run: how-to/monitor-a-run.md
+    - Troubleshoot: how-to/troubleshoot.md
+
+  - Reference:
+    - reference/index.md
+    - CLI: reference/cli.md
+    - Events: reference/events.md
+    - State Keys: reference/state.md
+    - Constitution Spec: reference/constitution-spec.md
+
+  - Development: development.md
+
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section
+      toc_depth: 3
+
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/fancy-bread/bureau
+      name: GitHub Repository
+
+copyright: Copyright &copy; 2026
+
+extra_css:
+  - stylesheets/extra.css
