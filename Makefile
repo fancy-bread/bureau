@@ -1,4 +1,4 @@
-.PHONY: ci lint test test-cov test-e2e bureau-kafka-up bureau-kafka-down test-kafka-smoke test-kafka-smoke-ts test-kafka-smoke-dotnet
+.PHONY: ci lint test test-cov test-e2e bureau-kafka-up bureau-kafka-down test-kafka-smoke test-kafka-smoke-ts test-kafka-smoke-dotnet test-kafka-alpha-ts docs-serve docs-build
 
 ci: lint test
 
@@ -36,3 +36,15 @@ test-kafka-smoke-dotnet:
 	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
 		bureau run ../bureau-test-dotnet/specs/001-kafka-observability-dashboard/spec.md \
 		--repo ../bureau-test-dotnet
+
+test-kafka-alpha-ts:
+	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
+		bureau run ../agent-context-explorer/specs/008-claude-agents-and-conditional-display/spec.md \
+		--repo ../agent-context-explorer \
+		2>&1 | tee run-$(shell date +%s).txt
+
+docs-serve:
+	mkdocs serve
+
+docs-build:
+	mkdocs build
