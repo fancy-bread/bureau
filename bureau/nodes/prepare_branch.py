@@ -11,16 +11,9 @@ from bureau.state import Escalation, EscalationReason, Phase
 
 
 def _derive_branch_name(state: dict[str, Any]) -> str:
-    spec = state.get("spec")
     run_id = state["run_id"]
-
-    if spec:
-        raw_name = spec.name
-    else:
-        parent = Path(state["spec_path"]).parent.name
-        raw_name = re.sub(r"^\d+-", "", parent)
-
-    spec_name = re.sub(r"[^a-z0-9]+", "-", raw_name.lower()).strip("-")[:40]
+    folder_name = Path(state["spec_path"]).parent.name
+    spec_name = re.sub(r"[^a-z0-9]+", "-", folder_name.lower()).strip("-")[:40]
     run_id_prefix = run_id.removeprefix("run-")[:8]
     return f"feat/{spec_name}-{run_id_prefix}"
 
