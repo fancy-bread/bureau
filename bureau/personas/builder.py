@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import re
 from datetime import datetime, timezone
@@ -67,23 +68,40 @@ _LOGGABLE_TOOLS = {"write_file", "read_file", "edit_file", "glob", "grep", "exec
 _EXIT_CODE_RE = re.compile(r"\[Command (?:succeeded|failed) with exit code (\d+)\]")
 
 
+def _extract_from_dict(d: dict) -> str:
+    return str(
+        d.get("file_path")
+        or d.get("path")
+        or d.get("command")
+        or d.get("pattern")
+        or next(iter(d.values()), "")
+    )
+
+
 def _parse_detail(input_str: str) -> str:
     """Extract a single meaningful value from a tool's input_str for logging."""
-    try:
-        parsed = json.loads(input_str)
-        if isinstance(parsed, dict):
-            return str(
-                parsed.get("path")
-                or parsed.get("command")
-                or parsed.get("pattern")
-                or next(iter(parsed.values()), "")
-            )
-    except (json.JSONDecodeError, TypeError):
-        pass
+    for loader in (json.loads, ast.literal_eval):
+        try:
+            parsed = loader(input_str)
+            if isinstance(parsed, dict):
+                return _extract_from_dict(parsed)
+        except Exception:
+            pass
     return input_str[:80] if input_str else ""
 
 
+def _relativize(detail: str, repo_path: str) -> str:
+    """Replace absolute repo path occurrences so output stays readable."""
+    if repo_path:
+        return detail.replace(repo_path + "/", "").replace(repo_path, ".")
+    return detail
+
+
 class _ProgressCallback(BaseCallbackHandler):
+    def __init__(self, repo_path: str = "") -> None:
+        super().__init__()
+        self._repo_path = repo_path
+
     def on_tool_start(
         self, serialized: dict[str, Any], input_str: str, *, run_id: UUID, **kwargs: Any
     ) -> None:
@@ -91,12 +109,9 @@ class _ProgressCallback(BaseCallbackHandler):
         if tool not in _LOGGABLE_TOOLS:
             return
         inputs: dict[str, Any] = kwargs.get("inputs") or {}
-        detail = (
-            inputs.get("path")
-            or inputs.get("command")
-            or inputs.get("pattern")
-            or _parse_detail(input_str)
-        )
+        detail = _extract_from_dict(inputs) if inputs else _parse_detail(input_str)
+        if detail:
+            detail = _relativize(str(detail), self._repo_path)
         events.emit(events.BUILDER_TOOL, tool=tool, detail=str(detail)[:120] if detail else "")
 
     def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
@@ -157,7 +172,10 @@ def run_builder_attempt(
     try:
         result: dict[str, Any] = agent.invoke(
             {"messages": [HumanMessage(content=user_content)]},
-            config={"recursion_limit": step_limit, "callbacks": [_ProgressCallback()]},
+            config={
+                "recursion_limit": step_limit,
+                "callbacks": [_ProgressCallback(repo_path=repo_path)],
+            },
         )
     except Exception as exc:
         return BuildAttempt(

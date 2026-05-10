@@ -44,7 +44,7 @@ class TestBranchNameDerivation:
             out = prepare_branch_node(state)
 
         assert branch_calls, "checkout -b not called"
-        assert out["branch_name"] == "feat/smoke-hello-world-deaaf184"
+        assert out["branch_name"] == "feat/001-smoke-hello-world-deaaf184"
 
     def test_branch_name_truncation(self):
         state = _make_state(spec_path="specs/001-" + "a" * 60 + "/spec.md")
@@ -64,15 +64,13 @@ class TestBranchNameDerivation:
 
         assert len(out["branch_name"]) <= 60
 
-    def test_spec_name_kebab_case(self):
-        spec = MagicMock()
-        spec.name = "hello world_feature"
-        state = _make_state(spec=spec)
+    def test_spec_name_from_folder(self):
+        state = _make_state(spec_path="specs/007-hello_world-feature/spec.md")
 
         with patch("bureau.nodes.prepare_branch.subprocess.run", side_effect=_mock_checkout_success):
             out = prepare_branch_node(state)
 
-        assert "hello-world-feature" in out["branch_name"]
+        assert "007-hello-world-feature" in out["branch_name"]
 
     def test_branch_name_stored_in_state(self):
         state = _make_state()
@@ -80,7 +78,7 @@ class TestBranchNameDerivation:
         with patch("bureau.nodes.prepare_branch.subprocess.run", side_effect=_mock_checkout_success):
             out = prepare_branch_node(state)
 
-        assert out["branch_name"] == "feat/smoke-hello-world-deaaf184"
+        assert out["branch_name"] == "feat/001-smoke-hello-world-deaaf184"
         assert out["_route"] == "ok"
 
 
