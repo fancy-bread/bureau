@@ -25,7 +25,8 @@ bureau-kafka-down:
 test-kafka-smoke:
 	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
 		bureau run ../bureau-test-python/specs/001-smoke-hello-world/spec.md \
-		--repo ../bureau-test-python
+		--repo ../bureau-test-python \
+		2>&1 | tee run-$(shell date +%s).txt
 
 test-kafka-smoke-ts:
 	BUREAU_KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \

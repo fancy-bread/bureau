@@ -83,7 +83,8 @@ def list_runs(status_filter: Optional[str] = None) -> list[RunRecord]:
             record = get_run(run_dir.name)
             if status_filter is None or record.status == status_filter:
                 records.append(record)
-        except Exception:
+        except Exception as exc:
+            print(f"[bureau] skipping unreadable run {run_dir.name}: {exc}", file=sys.stderr)
             continue
     return records
 

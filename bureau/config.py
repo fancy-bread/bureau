@@ -4,11 +4,15 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+DEFAULT_BUILDER_MODEL = "claude-sonnet-4-6"
+DEFAULT_REVIEWER_MODEL = "claude-opus-4-7"
+SKILLS_ROOT = Path(__file__).parent / "skills" / "addyosmani"
+
 
 @dataclass
 class BureauConfig:
-    builder_model: str = "claude-sonnet-4-6"
-    reviewer_model: str = "claude-opus-4-7"
+    builder_model: str = DEFAULT_BUILDER_MODEL
+    reviewer_model: str = DEFAULT_REVIEWER_MODEL
     github_token_env: str = "GITHUB_TOKEN"
     max_retries: int = 3
     max_builder_attempts: int = 3

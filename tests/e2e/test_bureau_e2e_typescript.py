@@ -13,12 +13,16 @@ pytestmark = [SKIP_NO_TYPESCRIPT_REPO, SKIP_NO_KEY]
 
 
 def _is_cloudevents(stdout: str) -> bool:
-    first = stdout.strip().splitlines()[0] if stdout.strip() else ""
-    try:
-        obj = json.loads(first)
-        return obj.get("specversion") == "1.0"
-    except (json.JSONDecodeError, AttributeError):
-        return False
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+            return obj.get("specversion") == "1.0"
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    return False
 
 
 def _write_bureau_artifact(stdout: str) -> None:

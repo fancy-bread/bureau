@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from bureau import events
-from bureau.config import load_constitution
+from bureau.config import DEFAULT_BUILDER_MODEL, SKILLS_ROOT, load_constitution
 from bureau.memory import Memory
 from bureau.models import BuildAttempt, PipelinePhase, TaskPlan
 from bureau.personas.builder import run_builder_attempt
@@ -14,7 +15,7 @@ from bureau.state import Escalation, EscalationReason, Phase
 from bureau.tools.pipeline import run_pipeline
 from bureau.tools.shell_tools import execute_shell_tool
 
-_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "addyosmani"
+_SKILLS_ROOT = SKILLS_ROOT
 
 
 def builder_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -32,7 +33,7 @@ def builder_node(state: dict[str, Any]) -> dict[str, Any]:
     install_cmd = repo_context.install_cmd if repo_context else ""
     lint_cmd = repo_context.lint_cmd if repo_context else ""
     build_cmd = repo_context.build_cmd if repo_context else ""
-    model = repo_context.builder_model if repo_context else "claude-sonnet-4-6"
+    model = repo_context.builder_model if repo_context else DEFAULT_BUILDER_MODEL
     timeout = repo_context.command_timeout if repo_context else 300
 
     task_plan_dict = state.get("task_plan")
@@ -151,7 +152,8 @@ def _format_task_plan(task_plan_dict: dict | None, plan_text: str = "") -> str:
             frs = f" [{', '.join(task.fr_ids)}]"
             lines.append(f"- [{task.id}]{frs}{deps}: {task.description}")
         return "\n".join(lines)
-    except Exception:
+    except Exception as exc:
+        print(f"[bureau] _format_task_plan failed: {exc}", file=sys.stderr)
         return str(task_plan_dict)
 
 
