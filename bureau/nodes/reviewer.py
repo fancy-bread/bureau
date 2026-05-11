@@ -9,14 +9,14 @@ from typing import Any
 import anthropic
 
 from bureau import events
-from bureau.config import load_constitution
+from bureau.config import DEFAULT_REVIEWER_MODEL, SKILLS_ROOT, load_constitution
 from bureau.memory import Memory
 from bureau.models import BuildAttempt, PipelinePhase, RalphRound, ReviewerFinding, ReviewerVerdict
 from bureau.personas.reviewer import run_reviewer
 from bureau.state import Escalation, EscalationReason, Phase
 from bureau.tools.pipeline import run_pipeline
 
-_SKILLS_ROOT = Path(__file__).parent.parent / "skills" / "addyosmani"
+_SKILLS_ROOT = SKILLS_ROOT
 
 
 def _load_review_skill(skills_root: Path) -> str:
@@ -50,7 +50,7 @@ def reviewer_node(state: dict[str, Any]) -> dict[str, Any]:
 
     spec_text = state.get("spec_text") or Path(spec_path).read_text(encoding="utf-8")
     constitution = load_constitution(repo_path)
-    model = repo_context.reviewer_model if repo_context else "claude-opus-4-7"
+    model = repo_context.reviewer_model if repo_context else DEFAULT_REVIEWER_MODEL
     timeout = repo_context.command_timeout if repo_context else 300
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
@@ -276,7 +276,7 @@ def _git_diff_files(repo_path: str) -> list[str]:
         if result.returncode != 0:
             return []
         return [f.strip() for f in result.stdout.splitlines() if f.strip()]
-    except Exception:
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
         return []
 
 

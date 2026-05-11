@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Optional
 
+from bureau.config import DEFAULT_BUILDER_MODEL, DEFAULT_REVIEWER_MODEL
+
 
 class Phase(StrEnum):
     VALIDATE_SPEC = "validate_spec"
@@ -84,8 +86,8 @@ class RepoContext:
     max_builder_attempts: int = 3
     max_ralph_rounds: int = 3
     command_timeout: int = 300
-    builder_model: str = "claude-sonnet-4-6"
-    reviewer_model: str = "claude-opus-4-7"
+    builder_model: str = DEFAULT_BUILDER_MODEL
+    reviewer_model: str = DEFAULT_REVIEWER_MODEL
 
 
 @dataclass
@@ -109,10 +111,6 @@ class RunRecord:
     started_at: str
     updated_at: str
     pr_url: Optional[str] = None
-
-
-class RunState(dict):
-    """LangGraph state for a bureau run. Extends dict for TypedDict compatibility."""
 
 
 def make_initial_state(
